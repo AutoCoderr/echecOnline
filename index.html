@@ -1,0 +1,311 @@
+<html>
+    <head>
+        <meta charset="utf8">
+        <title>Echec Online</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+        <link rel="stylesheet" href="style.css">
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+          integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+          crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <link rel="icon" href="echec.ico"/>
+    </head>
+    <body>
+        <center>
+            <div id="loginForm">
+                <br/><br/>
+                <h1>Quel pseudo souhaitez vous utiliser? : </h1>
+                <br/>
+                <div class="input-group col-3">
+                    <input type="text" class="form-control" id="pseudo" placeholder="Pseudo">
+                    <div class="input-group-append">
+                      <button class="btn btn-primary" type="button" onclick="sendPseudo()">Valider</button>
+                    </div>
+                  </div>
+            </div>
+            <div id="playerOfTurn"></div>
+            <div id="echec"></div>
+            <div id="whoPlayer"></div>
+            <div id="list">
+            </div>
+            <div id="cases"></div>
+            <div id="demmand">
+            </div>
+            <div id='msg'></div>
+        </center>
+    </body>
+    <div class="modal text-dark text-center" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Votre choix</h5>
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-primary" type="button" onclick='choiceModal()'>Valider</button>
+            </div>
+          </div>
+        </div>
+      </div>
+</html>
+<script src="socket.io.js"></script>
+<script>
+    let playing = false;
+    let searchingForPlayer = false;
+
+    let pseudo = "";
+
+    const numToLetter = {0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F", 6: "G", 7: "H"};
+
+    let choicedCases = [];
+
+    const socket = io.connect('http://' + location.hostname + ':' + location.port);
+
+
+    function sendPseudo() {
+        pseudo = document.getElementById("pseudo").value;
+        if (pseudo == "") {
+            pseudo = "user"+Math.round(Math.random()*10**5);
+        }
+
+        socket.emit('login', pseudo);
+    }
+
+    function sendDemmand(pseudo) {
+        socket.emit('sendDemmand', pseudo);
+    }
+
+    function acceptDemmand(pseudo) {
+        socket.emit('acceptDemmand', pseudo);
+    }
+
+    function searchPlayer() {
+        searchingForPlayer = true;
+        document.getElementById("list").innerHTML = "<br/>Recherche en cours...<br/><br/><button class='btn btn-primary' type='button' onclick='stopSearchPlayer()'>Annuler</button>";
+        socket.emit("searchPlayer");
+    }
+
+    function stopSearchPlayer() {
+         searchingForPlayer = false;
+         socket.emit("stopSearch");
+         socket.emit("displayPlayers");
+    }
+
+    function valid() {
+        if (choicedCases.length != 2) {
+            return;
+        }
+        socket.emit("action",{A: choicedCases[0], B: choicedCases[1]});
+    }
+
+    function restart() {
+        socket.emit("restart");
+    }
+
+    socket.on("emptyChoicedCases", function() {
+        choicedCases = [];
+    })
+
+    socket.on("newPseudo", function(newPseudo) {
+        pseudo = newPseudo;
+    });
+
+    socket.on("demmand", function(pseudo) {
+        if (playing) { return; }
+        let str = "<br/>"+pseudo+" souhaite jouer avec vous.";
+        str += "<br/><button class='btn btn-primary' type='button' onclick='acceptDemmand(`"+pseudo+"`)'>Accepter</button>";
+        document.getElementById("demmand").innerHTML = str;
+    });
+
+    socket.on("displayPlayers", function(players) {
+        if (pseudo == "" | playing | searchingForPlayer) {
+            return;
+        }
+        document.getElementById("loginForm").style.display = "none";
+        let str =  "<br/><br/><div class='btn-group'><button class='btn btn-primary btn-lg' onclick='searchPlayer()'>Chercher Joueur</button></div>"+
+                   "<br/><br/><h1>Utilisateurs connectés :</h1><br/><table>";
+        for (let i=0;i<players.length;i++) {
+            if (players[i] != pseudo) {
+                str += "<tr><td>"+players[i]+"</td><td>&nbsp;<button class='btn btn-primary' type='button' onclick='sendDemmand(`"+players[i]+"`)'>Inviter</button></td></tr>";
+            }
+        }
+        if (players.length == 1) {
+            str += "<tr><td>Il n'y a personne d'autre</td></tr>";
+        }
+        str += "</table>";
+        document.getElementById("list").innerHTML = str;
+    });
+
+    socket.on("displayLevel", function (datas) {
+        choicedCases = [];
+        let echec = datas.tab;
+        searchingForPlayer = false;
+        if (!playing) {
+            playing = true;
+            document.getElementById("list").innerHTML = ""; 
+        }
+        document.getElementById("demmand").innerHTML = "";
+
+        let lA = 8;
+        let cA = 8;
+        let lB = 8;
+        let cB = 8;
+        if (typeof(datas.lastDeplacment) != "undefined") {
+            lA = datas.lastDeplacment.lA;
+            cA = datas.lastDeplacment.cA;
+            lB = datas.lastDeplacment.lB;
+            cB = datas.lastDeplacment.cB;
+        }
+
+        let str = "<table>";
+        str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
+        for (let l=0;l<echec.length;l++) {
+            str += "<tr>";
+            str += "<td>"+(8-l)+"</td>";
+            for (let c=0;c<echec[l].length;c++) {
+                let classCSS = "cell"+echec[l][c];
+                if ((l+1)%2 == (c+1)%2) {
+                    classCSS += "b"
+                } else {
+                    classCSS += "m";
+                }
+                if ((l == lA & c == cA) | (l == lB & c == cB)) {
+                    classCSS += " entoured";
+                }
+                str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
+            }
+            str += "<td>"+(8-l)+"</td>";
+            str += "</tr>";
+        }
+        str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
+        str += "</table>";
+        document.getElementById("echec").innerHTML = str;
+        if (typeof(datas.hisOwnTurn) != "undefined") {
+            if (datas.hisOwnTurn) {
+                for (let l=0;l<8;l++) {
+                    for (let c=0;c<8;c++) {
+                        document.getElementById(l+"-"+c).onclick = function () {
+                            let caseName = numToLetter[c]+(8-l);
+                            if (choicedCases.length == 2) {
+                                return;
+                            }
+                            choicedCases.push(caseName);
+                            if (choicedCases.length == 2) {
+                                document.getElementById("cases").innerHTML = document.getElementById("cases").innerHTML+" en "
+                            }
+                            document.getElementById("cases").innerHTML = document.getElementById("cases").innerHTML+"<span class='afficheCase'>"+caseName+"</span>";
+                            if (choicedCases.length == 2) {
+                                setTimeout(() => {
+                                    document.getElementById("cases").innerHTML = "";
+                                    valid();
+                                }, 100);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (datas.echec) {
+            document.getElementById("msg").innerHTML = "<font color='red'>Vous êtes en echec</font>";
+        } else {
+            document.getElementById("msg").innerHTML = "";
+        }
+
+        document.getElementById("whoPlayer").innerHTML = "Vous êtes le joueur <font style='background-color: #999;' "+
+        "color='"+(datas.playerType == 1 ? "red" : "green")+"' size='4'>"+datas.playerType+"</font>";
+
+        if (typeof(datas.hisOwnTurn) != "undefined") {
+            if (datas.hisOwnTurn) {
+                document.getElementById("playerOfTurn").innerHTML = "C'est a vous.";
+            } else {
+                document.getElementById("playerOfTurn").innerHTML = "C'est au joueur <font style='background-color: #999;' "+
+                "color='"+(datas.playerType == 1 ? "green" : "red")+"' size='4'>"+(datas.playerType == 1 ? 2 : 1)+"</font>";
+            }
+        } else {
+            document.getElementById("playerOfTurn").innerHTML = "&nbsp;";
+        }
+    });
+
+    socket.on("endGame", function(datas) {
+        let str = "Partie terminé!<br/>";
+        if (typeof(datas.winner) == "undefined") {
+            str += "Match nul";
+        } else {
+            if (datas.winner == datas.playerType) {
+                str += "<font color='green'>Vous avez gagné!</font>";
+            } else {
+                str += "<font color='red'>Vous avez perdu!</font>";
+            }
+        }
+
+        str += "<br/><button class='btn btn-danger' type='button' onclick='quitParty()'>Menu Principal</button>";
+        
+        str += "<button class='btn btn-danger' type='button' onclick='restart()'>Rejouer</button> (<span id='voteToRestart'>0</span> vote sur 2)";
+        document.getElementById("msg").innerHTML = str;
+    });
+
+    socket.on("voteToRestart", function (nb) {
+        document.getElementById("voteToRestart").innerHTML = nb;
+    });
+
+    socket.on("msg", function(msg) {
+        let color;
+        if (msg.type == "error") {
+            color = "red";
+        } else if (msg.type == "info") {
+            color = "#008DC0";
+        }
+        if (msg.type != "empty") {
+            document.getElementById("msg").innerHTML = "<font color='"+color+"'>"+msg.msg+"</font>";
+        } else {
+            document.getElementById("msg").innerHTML = "";
+        }
+    });
+
+    socket.on("quitParty", function() {
+        playing = false;
+        document.getElementById("echec").innerHTML = "";
+        document.getElementById("msg").innerHTML = "";
+        document.getElementById("whoPlayer").innerHTML = "";
+        document.getElementById("playerOfTurn").innerHTML = "";
+
+        socket.emit("displayPlayers");
+    });
+
+    socket.on("coupSpecial", function(obj) {
+        if (typeof(obj) != "object") {
+            return;
+        }
+        if (!Array.isArray(obj.reponses)) {
+            return;
+        }
+        if (typeof(obj.msg) != "string") {
+            return;
+        }
+
+        let selectReponse = "<select id='rep'>";
+        for (let i=0;i<obj.reponses.length;i++) {
+            selectReponse += "<option value='"+obj.reponses[i]+"'>"+obj.reponses[i]+"</option>";
+        }
+        selectReponse += "</select>";
+
+        $(".modal-title").html("Choisissez");
+        $(".modal-body").html(obj.msg+" : "+selectReponse);
+
+        $(".modal").modal("toggle");
+    });
+
+    function choiceModal() {
+        let reponse = document.getElementById("rep").value;
+
+        $(".modal").modal("toggle");
+        socket.emit("reponseCoupSpecial",reponse);
+    }
+
+    function quitParty() {
+        socket.emit("quitParty");
+    }
+</script>

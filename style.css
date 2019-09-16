@@ -1,0 +1,134 @@
+/*
+legende :
+0 = case vide
+
+11 = pion blanc
+12 = pion noir
+
+21 = cavalier blanc
+22 = cavalier noir
+
+31 = tour blanche
+32 = tour noire
+
+41 = fou blanc
+42 = fou noir
+            
+51 = reine blanche
+52 = reine noire
+
+61 = roi blanc
+62 = roi noir
+*/
+.cell {
+    width: 50px;
+    height: 50px;
+    border: 1px solid black;
+    background-repeat:no-repeat;
+    background-size: 51px 50px;
+}
+
+.cell0b {
+    background-color: rgb(255,206,158);
+}
+.cell0m {
+    background-color: rgb(209,139,71);
+}
+
+
+.cell11b {
+    background-image: url("imgs/pionBlancBeige.png");
+}
+.cell11m {
+    background-image: url("imgs/pionBlancMarron.png");
+}
+.cell12b {
+    background-image: url("imgs/pionNoirBeige.png");
+}
+.cell12m {
+    background-image: url("imgs/pionNoirMarron.png");
+}
+
+.cell21b {
+    background-image: url("imgs/cavalierBlancBeige.png");
+}
+.cell21m {
+    background-image: url("imgs/cavalierBlancMarron.png");
+}
+.cell22b {
+    background-image: url("imgs/cavalierNoirBeige.png");
+}
+.cell22m {
+    background-image: url("imgs/cavalierNoirMarron.png");
+}
+
+.cell31b {
+    background-image: url("imgs/tourBlancheBeige.png");
+}
+.cell31m {
+    background-image: url("imgs/tourBlancheMarron.png");
+}
+.cell32b {
+    background-image: url("imgs/tourNoireBeige.png");
+}
+.cell32m {
+    background-image: url("imgs/tourNoireMarron.png");
+}
+
+.cell41b {
+    background-image: url("imgs/fouBlancBeige.png");
+}
+.cell41m {
+    background-image: url("imgs/fouBlancMarron.png");
+}
+.cell42b {
+    background-image: url("imgs/fouNoirBeige.png");
+}
+.cell42m {
+    background-image: url("imgs/fouNoirMarron.png");
+}
+
+.cell51b {
+    background-image: url("imgs/reineBlancheBeige.png");
+}
+.cell51m {
+    background-image: url("imgs/reineBlancheMarron.png");
+}
+.cell52b {
+    background-image: url("imgs/reineNoireBeige.png");
+}
+.cell52m {
+    background-image: url("imgs/reineNoireMarron.png");
+}
+
+.cell61b {
+    background-image: url("imgs/roiBlancBeige.png");
+}
+.cell61m {
+    background-image: url("imgs/roiBlancMarron.png");
+}
+.cell62b {
+    background-image: url("imgs/roiNoirBeige.png");
+}
+.cell62m {
+    background-image: url("imgs/roiNoirMarron.png");
+}
+
+.alignCenter td {
+    text-align: center;
+}
+
+.afficheCase {
+    border: 1px solid black;
+    width: 30px;
+}
+
+.entoured {
+    border: 2px solid black;
+    border-color: red;
+}
+
+body {
+    background-color: #1E1B1B;
+    color:white;
+}
