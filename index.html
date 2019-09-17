@@ -144,7 +144,7 @@
         searchingForPlayer = false;
         if (!playing) {
             playing = true;
-            document.getElementById("list").innerHTML = ""; 
+            document.getElementById("list").innerHTML = "";
         }
         document.getElementById("demmand").innerHTML = "";
 
@@ -160,26 +160,49 @@
         }
 
         let str = "<table>";
-        str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
-        for (let l=0;l<echec.length;l++) {
-            str += "<tr>";
-            str += "<td>"+(8-l)+"</td>";
-            for (let c=0;c<echec[l].length;c++) {
-                let classCSS = "cell"+echec[l][c];
-                if ((l+1)%2 == (c+1)%2) {
-                    classCSS += "b"
-                } else {
-                    classCSS += "m";
+        if (datas.playerType == 1) {
+            str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
+            for (let l=0;l<echec.length;l++) {
+                str += "<tr>";
+                str += "<td>"+(8-l)+"</td>";
+                for (let c=0;c<echec[l].length;c++) {
+                    let classCSS = "cell"+echec[l][c];
+                    if ((l+1)%2 == (c+1)%2) {
+                        classCSS += "b"
+                    } else {
+                        classCSS += "m";
+                    }
+                    if ((l == lA & c == cA) | (l == lB & c == cB)) {
+                        classCSS += " entoured";
+                    }
+                    str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
                 }
-                if ((l == lA & c == cA) | (l == lB & c == cB)) {
-                    classCSS += " entoured";
-                }
-                str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
+                str += "<td>"+(8-l)+"</td>";
+                str += "</tr>";
             }
-            str += "<td>"+(8-l)+"</td>";
-            str += "</tr>";
+            str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
+        } else {
+            str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
+            for (let l=echec.length-1;l>=0;l--) {
+                str += "<tr>";
+                str += "<td>"+(8-l)+"</td>";
+                for (let c=echec[l].length-1;c>=0;c--) {
+                    let classCSS = "cell"+echec[l][c];
+                    if ((l+1)%2 == (c+1)%2) {
+                        classCSS += "b"
+                    } else {
+                        classCSS += "m";
+                    }
+                    if ((l == lA & c == cA) | (l == lB & c == cB)) {
+                        classCSS += " entoured";
+                    }
+                    str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
+                }
+                str += "<td>"+(8-l)+"</td>";
+                str += "</tr>";
+            }
+            str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
         }
-        str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
         str += "</table>";
         document.getElementById("echec").innerHTML = str;
         if (typeof(datas.hisOwnTurn) != "undefined") {
@@ -242,7 +265,7 @@
         }
 
         str += "<br/><button class='btn btn-danger' type='button' onclick='quitParty()'>Menu Principal</button>";
-        
+
         str += "<button class='btn btn-danger' type='button' onclick='restart()'>Rejouer</button> (<span id='voteToRestart'>0</span> vote sur 2)";
         document.getElementById("msg").innerHTML = str;
     });

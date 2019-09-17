@@ -7,7 +7,7 @@ let http = require('http'),
 let dataInfoCase = {
     1: { // pions
         justTwoDeplacment: false
-    }, 
+    },
     0: { //tous le mondes
         nb: 0,
         isLastDeplacment: false
@@ -36,12 +36,12 @@ legende :
 61 = roi blanc
 62 = roi noir
 */
-    
-const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7: 32},
-                          1: {0: 12, 1: 12, 2: 12, 3: 12, 4: 12, 5: 12, 6: 12, 7: 12},
 
-                          6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11},
-                          7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 41, 6: 21, 7: 31}};
+const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7: 32},
+    1: {0: 12, 1: 12, 2: 12, 3: 12, 4: 12, 5: 12, 6: 12, 7: 12},
+
+    6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11},
+    7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 41, 6: 21, 7: 31}};
 //const positionInitales = {3: {3: 62}, 5: {3: 61}, 7: {2: 51}};
 
 
@@ -56,25 +56,25 @@ const server = http.createServer(function(req, res) { // -----------------------
     page = __dirname + page
     const ext = page.split(".")[page.split(".").length-1]
     if (ext == "png" | ext == "jpg" | ext == "gif" | ext == "jpeg" | ext == "bmp" | ext == "tif" | ext == "tiff" | ext == "ico") {
-       fs.readFile(page, function(error, content) {
-         if(error){
-           res.writeHead(404, {"Content-Type": "text/plain"});
-           res.end("ERROR 404 : Page not found");
-         } else {
-           res.writeHead(200, {"Content-Type": "image/" + ext});
-           res.end(content);
-         }
-      });
-    } else {    
+        fs.readFile(page, function(error, content) {
+            if(error){
+                res.writeHead(404, {"Content-Type": "text/plain"});
+                res.end("ERROR 404 : Page not found");
+            } else {
+                res.writeHead(200, {"Content-Type": "image/" + ext});
+                res.end(content);
+            }
+        });
+    } else {
         fs.readFile(page, 'utf-8', function(error, content) {
-           if(error | page.split("/")[page.split("/").length-1] == "serv.js"){
-             res.writeHead(404, {"Content-Type": "text/plain"});
-             res.end("ERROR 404 : Page not found");
-           } else {
+            if(error | page.split("/")[page.split("/").length-1] == "serv.js"){
+                res.writeHead(404, {"Content-Type": "text/plain"});
+                res.end("ERROR 404 : Page not found");
+            } else {
                 res.writeHead(200, {"Content-Type": "text/html"});
                 res.end(content);
-           }
-      });
+            }
+        });
     }
 });
 
@@ -94,9 +94,9 @@ io.sockets.on('connection', function (socket) {
             }
         }
         pseudo = pseudo+n;
-        players[pseudo] = {pseudo: pseudo, level: null, adversaire: null, playerType: null, 
-                           socket: socket, demmanded: "", playing: false, hisOwnTurn: null, 
-                           voteToRestart: null, infoCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null};
+        players[pseudo] = {pseudo: pseudo, level: null, adversaire: null, playerType: null,
+            socket: socket, demmanded: "", playing: false, hisOwnTurn: null,
+            voteToRestart: null, infoCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null};
         socket.datas = players[pseudo];
         console.log("new connected! : "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
         socket.emit("newPseudo", pseudo)
@@ -138,7 +138,7 @@ io.sockets.on('connection', function (socket) {
         if (typeof(players[pseudo]) == "undefined") {
             socket.emit("msg", {msg: "Ce joueur n'existe pas", type: "error"});
         } else if (players[pseudo].demmanded != socket.datas.pseudo) {
-            socket.emit("msg", {msg: "Cet utilisateur ne vous a jamais envoyé de demmande", type: "error"}); 
+            socket.emit("msg", {msg: "Cet utilisateur ne vous a jamais envoyé de demmande", type: "error"});
         } else {
             players[pseudo].demmanded = "";
             startGame(players[pseudo],socket.datas);
@@ -359,9 +359,9 @@ function action(caseA,caseB,callback,player) {
             deplaceRec(() => {
                 const lP = listMouv[listMouv.length-1].l;
                 const cP = listMouv[listMouv.length-1].c;
-                if (listMouv[0].c != cA & 
-                    ((currentPlayerb == 1 & getElem(echec,lP+1,cP)%10 == 2 & getInfoCase(lP+1,cP,infosCase).isLastDeplacment & getInfoCase(lP+1,cP,infosCase).justTwoDeplacment) | 
-                     (currentPlayerb == 2 & getElem(echec,lP-1,cP)%10 == 1 & getInfoCase(lP-1,cP,infosCase).isLastDeplacment & getInfoCase(lP-1,cP,infosCase).justTwoDeplacment))) {
+                if (listMouv[0].c != cA &
+                    ((currentPlayerb == 1 & getElem(echec,lP+1,cP)%10 == 2 & getInfoCase(lP+1,cP,infosCase).isLastDeplacment & getInfoCase(lP+1,cP,infosCase).justTwoDeplacment) |
+                        (currentPlayerb == 2 & getElem(echec,lP-1,cP)%10 == 1 & getInfoCase(lP-1,cP,infosCase).isLastDeplacment & getInfoCase(lP-1,cP,infosCase).justTwoDeplacment))) {
                     if (currentPlayerb == 1) {
                         scorePlayersb[echec[lP+1][cP]%10][Math.floor(echec[lP+1][cP]/10)] -= 1;
                         echec[lP+1][cP] = 0;
@@ -386,8 +386,8 @@ function action(caseA,caseB,callback,player) {
                 }
                 if ((currentPlayerb == 1 & lB == 0) | (currentPlayerb == 2 & lB == 7)) {
                     callback(true,player,{func: (player,rep) => {
-                        promotion(lB,cB,player,rep);
-                    }, msg: "Par quoi voulez vous remplacer ce pion?", reponses: ["Cavalier","Tour","Fou","Reine"]});
+                            promotion(lB,cB,player,rep);
+                        }, msg: "Par quoi voulez vous remplacer ce pion?", reponses: ["Cavalier","Tour","Fou","Reine"]});
                     return;
                 }
                 callback(true,player);
@@ -459,13 +459,13 @@ function action(caseA,caseB,callback,player) {
                 if (thisInfoCase.nb == 1 ) {
                     if (echec[lB][cB-1] == 60+currentPlayerb & getInfoCase(lB,cB-1,infosCase).nb == 0) {
                         callback(true,player,{func: (player,rep) => {
-                            roque(lB,cB,lB,cB-1,player,rep);
-                        }, msg: "Effectuer un roque?", reponses: ["oui","non"]});
+                                roque(lB,cB,lB,cB-1,player,rep);
+                            }, msg: "Effectuer un roque?", reponses: ["oui","non"]});
                         return;
                     } else if (echec[lB][cB+1] == 60+currentPlayerb & getInfoCase(lB,cB+1,infosCase).nb == 0) {
                         callback(true,player,{func: (player,rep) => {
-                            roque(lB,cB,lB,cB+1,player,rep);
-                        }, msg: "Effectuer un roque?", reponses: ["oui","non"]});
+                                roque(lB,cB,lB,cB+1,player,rep);
+                            }, msg: "Effectuer un roque?", reponses: ["oui","non"]});
                         return;
                     }
                 }
@@ -559,7 +559,7 @@ function deplaceRec(callback,lP,cP,listMouv,type, player, i = 0, ms = 500) {
     let infosCase = player.infosCase;
     if (i >= listMouv.length) {
         if (typeof(callback) == "function") {
-           callback();
+            callback();
         }
         return;
     }
@@ -614,7 +614,7 @@ function possibleMouvement(lA,cA,lB,cB,echec,currentPlayerb,infosCase) {
             if (lB == lA & cB == cA) {
                 return false;
             }
-            if ((currentPlayerb == 1 & (lB != lA-1 | cB != cA | (echec[lB][cB] != 0 & cB == cA))) | 
+            if ((currentPlayerb == 1 & (lB != lA-1 | cB != cA | (echec[lB][cB] != 0 & cB == cA))) |
                 (currentPlayerb == 2 & (lB != lA+1 | cB != cA | (echec[lB][cB] != 0 & cB == cA)))) { // deplacement en ligne droite
                 if ((currentPlayerb == 1 & ( ( (lB == lA-1 & (cB-cA)**2 == 1) & echec[lB][cB]%10 != 2 & (getElem(echec,lB+1,cB)%10 != 2 | !getInfoCase(lB+1,cB,infosCase).isLastDeplacment | !getInfoCase(lB+1,cB,infosCase).justTwoDeplacment) | echec[lB][cB]%10 == 1) | (lB == lA-2 & (getInfoCase(lA,cA,infosCase).nb > 0 | Math.sqrt((cB-cA)**2) == 2)) | (lB != lA-1 & lB != lA-2) | (lB == lA-1 & cB != cA-1 & cB != cA+1) | (echec[lB][cB] != 0 & cB == cA))) |
                     (currentPlayerb == 2 & ( ( (lB == lA+1 & (cB-cA)**2 == 1) & echec[lB][cB]%10 != 1 & (getElem(echec,lB-1,cB)%10 != 1 | !getInfoCase(lB-1,cB,infosCase).isLastDeplacment | !getInfoCase(lB-1,cB,infosCase).justTwoDeplacment) | echec[lB][cB]%10 == 2) | (lB == lA+2 & (getInfoCase(lA,cA,infosCase).nb > 0 | Math.sqrt((cB-cA)**2) == 2)) | (lB != lA+1 & lB != lA+2) | (lB == lA+1 & cB != cA-1 & cB != cA+1) | (echec[lB][cB] != 0 & cB == cA)))) {
@@ -688,7 +688,7 @@ function possibleMouvement(lA,cA,lB,cB,echec,currentPlayerb,infosCase) {
     echecb[lB][cB] = echecb[lA][cA];
     echecb[lA][cA] = 0;
     if (isEchec(currentPlayerb,echecb)) {
-         return false;
+        return false;
     }
     return true;
 }
@@ -1058,7 +1058,7 @@ function getPath(l,c,echec) {
             break;
         case 4: //fou
             coefs = [{coefL: -1, coefC: -1},{coefL: -1, coefC: 1}, {coefL: 1, coefC: -1}, {coefL: 1, coefC: 1}];
-            
+
             for (let i=0;i<coefs.length;i++) {
                 const coefL = coefs[i].coefL;
                 const coefC = coefs[i].coefC;
@@ -1081,8 +1081,8 @@ function getPath(l,c,echec) {
             break;
         case 5: //reine
             coefs = [{coefL: -1, coefC: -1},{coefL: -1, coefC: 1}, {coefL: 1, coefC: -1}, {coefL: 1, coefC: 1},
-                         {coefL: -1, coefC: 0},{coefL: 1, coefC: 0},{coefL: 0, coefC: -1},{coefL: 0, coefC: 1}];
-            
+                {coefL: -1, coefC: 0},{coefL: 1, coefC: 0},{coefL: 0, coefC: -1},{coefL: 0, coefC: 1}];
+
             for (let i=0;i<coefs.length;i++) {
                 const coefL = coefs[i].coefL;
                 const coefC = coefs[i].coefC;
@@ -1105,7 +1105,7 @@ function getPath(l,c,echec) {
             break;
         case 6: // roi
             coefs = [{coefL: -1, coefC: -1},{coefL: -1, coefC: 1}, {coefL: 1, coefC: -1}, {coefL: 1, coefC: 1},
-                         {coefL: -1, coefC: 0},{coefL: 1, coefC: 0},{coefL: 0, coefC: -1},{coefL: 0, coefC: 1}];
+                {coefL: -1, coefC: 0},{coefL: 1, coefC: 0},{coefL: 0, coefC: -1},{coefL: 0, coefC: 1}];
             for (let i=0;i<coefs.length;i++) {
                 const coefL = coefs[i].coefL;
                 const coefC = coefs[i].coefC;
