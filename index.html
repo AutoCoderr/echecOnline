@@ -33,6 +33,7 @@
             <div id="demmand">
             </div>
             <div id='msg'></div>
+            <div id='buttons'></div>
         </center>
     </body>
     <div class="modal text-dark text-center" tabindex="-1" role="dialog">
@@ -44,7 +45,7 @@
             <div class="modal-body">
             </div>
             <div class="modal-footer">
-              <button class="btn btn-primary" type="button" onclick='choiceModal()'>Valider</button>
+              <button class="btn btn-primary" id="buttonModal" type="button" onclick=''>Valider</button>
             </div>
           </div>
         </div>
@@ -205,6 +206,8 @@
         }
         str += "</table>";
         document.getElementById("echec").innerHTML = str;
+        document.getElementById("buttons").innerHTML = "<button class='btn btn-danger' type='button' onclick='demandSurrend()'>Abondonner</button>";
+
         if (typeof(datas.hisOwnTurn) != "undefined") {
             if (datas.hisOwnTurn) {
                 for (let l=0;l<8;l++) {
@@ -268,6 +271,8 @@
 
         str += "<button class='btn btn-danger' type='button' onclick='restart()'>Rejouer</button> (<span id='voteToRestart'>0</span> vote sur 2)";
         document.getElementById("msg").innerHTML = str;
+
+        document.getElementById("buttons").innerHTML = "";
     });
 
     socket.on("voteToRestart", function (nb) {
@@ -294,6 +299,7 @@
         document.getElementById("msg").innerHTML = "";
         document.getElementById("whoPlayer").innerHTML = "";
         document.getElementById("playerOfTurn").innerHTML = "";
+        document.getElementById("buttons").innerHTML = "";
 
         socket.emit("displayPlayers");
     });
@@ -317,9 +323,29 @@
 
         $(".modal-title").html("Choisissez");
         $(".modal-body").html(obj.msg+" : "+selectReponse);
+        $("#buttonModal").attr("onclick","choiceModal()");
 
         $(".modal").modal("toggle");
     });
+
+    socket.on("proposeSurrend", function() {
+        $(".modal-title").html("Choisissez");
+        $(".modal-body").html("Votre adversaire souhaitte abandonner : "+
+                              "<select id='rep'>"+
+                                "<option value='accept'>Accepter</option>"+
+                                "<option value='decline'>Refuser</option>"+
+                              "</select>");
+        $("#buttonModal").attr("onclick","choiceSurrend()");
+
+        $(".modal").modal("toggle");
+    });
+
+    function choiceSurrend() {
+        let reponse = document.getElementById("rep").value;
+
+        $(".modal").modal("toggle");
+        socket.emit("reponseSurrend", reponse);
+    }
 
     function choiceModal() {
         let reponse = document.getElementById("rep").value;
@@ -330,5 +356,10 @@
 
     function quitParty() {
         socket.emit("quitParty");
+    }
+
+    function demandSurrend() {
+        document.getElementById("msg").innerHTML = "<font color='#008DC0'>Demande d'abandon envoyé!</font>";
+        socket.emit("demandSurrend");
     }
 </script>

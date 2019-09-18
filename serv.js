@@ -96,7 +96,7 @@ io.sockets.on('connection', function (socket) {
         pseudo = pseudo+n;
         players[pseudo] = {pseudo: pseudo, level: null, adversaire: null, playerType: null,
             socket: socket, demmanded: "", playing: false, hisOwnTurn: null,
-            voteToRestart: null, infoCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null};
+            voteToRestart: null, infoCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false};
         socket.datas = players[pseudo];
         console.log("new connected! : "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
         socket.emit("newPseudo", pseudo)
@@ -266,6 +266,38 @@ io.sockets.on('connection', function (socket) {
             return;
         }
         socket.datas.functionCoupSpecial(socket.datas,rep);
+    });
+
+    socket.on("demandSurrend", function () {
+        let player = socket.datas;
+
+        if (!player.playing || player.adversaire == null) {
+            socket.emit("msg", {type: "error", msg: "Vous ne pouvez pas abandonner."});
+        } else {
+            player.surrendDemmanded = true;
+            player.adversaire.socket.emit("proposeSurrend");
+        }
+    });
+
+    socket.on("reponseSurrend", function (rep) {
+        let player = socket.datas;
+
+        if (!player.playing || player.adversaire == null) {
+            socket.emit("msg", {type: "error", msg: "Vous ne pouvez pas abandonner."});
+            return;
+        }
+        if (!player.adversaire.surrendDemmanded) {
+            socket.emit("msg", {type: "error", msg: "Abandon impossible"});
+            return;
+        }
+
+        if (rep == "decline") {
+            player.adversaire.socket.emit("msg", {type: "info", msg: "Abandon refusé"});
+        } else if (rep == "accept") {
+            gameOver(player, player.playerType);
+        } else {
+            socket.emit("msg", {type: "error", msg: "Reponse invalide"});
+        }
     });
 });
 
