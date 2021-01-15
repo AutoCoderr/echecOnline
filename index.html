@@ -27,8 +27,9 @@
             <div id="playerOfTurn"></div>
             <div id="echec"></div>
             <div id="whoPlayer"></div>
-            <div id="list">
-            </div>
+            <div id="list"></div>
+            <br/>
+            <button id="play_against_id_button" class='btn btn-danger' style="display: none;" type='button'>Jouer contre l'IA</button>
             <div id="cases"></div>
             <div id="demmand">
             </div>
@@ -137,6 +138,7 @@
         }
         str += "</table>";
         document.getElementById("list").innerHTML = str;
+        document.getElementById("play_against_id_button").style.display = "block";
     });
 
     socket.on("displayLevel", function (datas) {
@@ -146,6 +148,7 @@
         if (!playing) {
             playing = true;
             document.getElementById("list").innerHTML = "";
+            document.getElementById("play_against_id_button").style.display = "none";
         }
         document.getElementById("demmand").innerHTML = "";
 
@@ -161,47 +164,37 @@
         }
 
         let str = "<table>";
-        if (datas.playerType == 1) {
-            str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
-            for (let l=0;l<echec.length;l++) {
-                str += "<tr>";
-                str += "<td>"+(8-l)+"</td>";
-                for (let c=0;c<echec[l].length;c++) {
-                    let classCSS = "cell"+echec[l][c];
-                    if ((l+1)%2 == (c+1)%2) {
-                        classCSS += "b"
-                    } else {
-                        classCSS += "m";
-                    }
-                    if ((l == lA & c == cA) | (l == lB & c == cB)) {
-                        classCSS += " entoured";
-                    }
-                    str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
-                }
-                str += "<td>"+(8-l)+"</td>";
-                str += "</tr>";
-            }
+        //if (datas.playerType == 1) {
+        if (datas.playerType === 1) {
             str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
         } else {
             str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
-            for (let l=echec.length-1;l>=0;l--) {
-                str += "<tr>";
-                str += "<td>"+(8-l)+"</td>";
-                for (let c=echec[l].length-1;c>=0;c--) {
-                    let classCSS = "cell"+echec[l][c];
-                    if ((l+1)%2 == (c+1)%2) {
-                        classCSS += "b"
-                    } else {
-                        classCSS += "m";
-                    }
-                    if ((l == lA & c == cA) | (l == lB & c == cB)) {
-                        classCSS += " entoured";
-                    }
-                    str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
+        }
+        for (let l = datas.playerType === 1 ? 0 : echec.length-1;
+             (datas.playerType === 1 && l<echec.length) || (datas.playerType === 2 && l>=0);
+             l += datas.playerType === 1 ? 1 : -1) {
+            str += "<tr>";
+            str += "<td>"+(8-l)+"</td>";
+            for (let c = datas.playerType === 1 ? 0 : echec[l].length-1;
+                 (datas.playerType === 1 && c<echec[l].length) || (datas.playerType === 2 && c >=0);
+                 c += datas.playerType === 1 ? 1 : -1) {
+                let classCSS = "cell"+echec[l][c];
+                if ((l+1)%2 == (c+1)%2) {
+                    classCSS += "b"
+                } else {
+                    classCSS += "m";
                 }
-                str += "<td>"+(8-l)+"</td>";
-                str += "</tr>";
+                if ((l == lA & c == cA) | (l == lB & c == cB)) {
+                    classCSS += " entoured";
+                }
+                str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
             }
+            str += "<td>"+(8-l)+"</td>";
+            str += "</tr>";
+        }
+        if (datas.playerType == 1) {
+            str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
+        } else {
             str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
         }
         str += "</table>";
