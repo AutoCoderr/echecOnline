@@ -29,7 +29,7 @@
             <div id="whoPlayer"></div>
             <div id="list"></div>
             <br/>
-            <button id="play_against_id_button" class='btn btn-danger' style="display: none;" type='button'>Jouer contre l'IA</button>
+            <button id="play_against_id_button" class='btn btn-danger' onclick="playAgainstIA()" style="display: none;" type='button'>Jouer contre l'IA</button>
             <div id="cases"></div>
             <div id="demmand">
             </div>
@@ -100,6 +100,10 @@
             return;
         }
         socket.emit("action",{A: choicedCases[0], B: choicedCases[1]});
+    }
+
+    function playAgainstIA() {
+        socket.emit("playAgainstIA");
     }
 
     function restart() {
