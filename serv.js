@@ -29,7 +29,7 @@ legende :
 
 41 = fou blanc
 42 = fou noir
-                
+
 51 = reine blanche
 52 = reine noire
 
@@ -44,13 +44,26 @@ const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7
     7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 41, 6: 21, 7: 31}};
 //const positionInitales = {3: {3: 62}, 5: {3: 61}, 7: {2: 51}};
 
+const extByMimes = {
+    "application/javascript": ["js","mjs"],
+    "text/html": ["html","htm"]
+}
+let mimesByExt = {}
+for (let mime in extByMimes) {
+    for (let ext of extByMimes[mime]) {
+        mimesByExt[ext] = mime;
+    }
+}
+function getMimeByExt(ext) {
+    return mimesByExt[ext] ? mimesByExt[ext] : "text/plain";
+}
 
 const server = http.createServer(function(req, res) { // --------------------------> LE SERVEUR HTTP <------------------------------------------------------
     let page = url.parse(req.url).pathname;
     const param = url.parse(req.url).query;
     if (page == "/") {
         page = "/index.html"
-    } else if (page == "/socket.io/") {
+    } else if (page == "/socket.io" || page == "/socket.io/") {
         page = "/socket.io/socket.io.js"
     }
     page = __dirname + page
@@ -71,14 +84,14 @@ const server = http.createServer(function(req, res) { // -----------------------
                 res.writeHead(404, {"Content-Type": "text/plain"});
                 res.end("ERROR 404 : Page not found");
             } else {
-                res.writeHead(200, {"Content-Type": "text/html"});
+                res.writeHead(200, {"Content-Type": getMimeByExt(ext)});
                 res.end(content);
             }
         });
     }
 });
 
-const io = require('socket.io').listen(server);
+const io = require('socket.io')(server);
 
 io.sockets.on('connection', function (socket) {
     socket.on('login', function (pseudo) { // --------------------------------> LOGIN <--------------------------------------------
@@ -300,6 +313,8 @@ io.sockets.on('connection', function (socket) {
         }
     });
 });
+
+server.listen(3003);
 
 function callbackAction(success,player,coupSpecial) {
     let currentPlayerb = player.playerType;
@@ -1207,5 +1222,3 @@ function copyTab(tab) {
     }
     return tab2;
 }
-
-server.listen(3003);

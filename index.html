@@ -51,7 +51,7 @@
         </div>
       </div>
 </html>
-<script src="socket.io.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <script>
     let playing = false;
     let searchingForPlayer = false;
@@ -62,7 +62,7 @@
 
     let choicedCases = [];
 
-    const socket = io.connect('http://' + location.hostname + ':' + location.port);
+    const socket = io();
 
 
     function sendPseudo() {
