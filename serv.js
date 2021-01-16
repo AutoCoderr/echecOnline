@@ -1,7 +1,7 @@
 let http = require('http'),
     url = require('url'),
     fs = require('fs');
-const {playerSearching, players, startGame, remplace, action, setIA} = require("./libs/echecs");
+const {playerSearching, players, startGame, remplace, action, setIA, callbackAction, caseNameToCoor} = require("./libs/echecs");
 const { IA } = require("./libs/ia");
 setIA(IA);
 
@@ -93,7 +93,7 @@ io.sockets.on('connection', function (socket) {
         pseudo = pseudo+n;
         players[pseudo] = {pseudo: pseudo, level: null, adversaire: null, playerType: null,
             socket: socket, demmanded: "", playing: false, hisOwnTurn: null,
-            voteToRestart: null, infoCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false};
+            voteToRestart: null, infosCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false};
         socket.datas = players[pseudo];
         console.log("new connected! : "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
         socket.emit("newPseudo", pseudo)
@@ -153,7 +153,7 @@ io.sockets.on('connection', function (socket) {
         }
         players["ia"+n] = {pseudo: "ia"+n, level: null, adversaire: null, playerType: null,
             demmanded: "", playing: false, hisOwnTurn: null,
-            voteToRestart: null, infoCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false, isIA: true};
+            voteToRestart: null, infosCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false, isIA: true};
         startGame(socket.datas,players["ia"+n]);
     });
 
@@ -202,7 +202,9 @@ io.sockets.on('connection', function (socket) {
         if (typeof(cases.A) == "undefined" | typeof(cases.B) == "undefined") {
             return;
         }
-        action(cases.A,cases.B,null,socket.datas);
+        action(caseNameToCoor(cases.A),caseNameToCoor(cases.B),socket.datas).then((res) => {
+            callbackAction(res.success, res.player, res.coupSpecial);
+        });
     });
 
     socket.on("quitParty", function () {

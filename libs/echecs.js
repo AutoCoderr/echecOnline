@@ -12,10 +12,17 @@ let dataInfoCase = {
 }
 
 const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7: 32},
-	1: {0: 12, 1: 12, 2: 12, 3: 12, 4: 12, 5: 12, 6: 12, 7: 12},
+						  1: {0: 12, 1: 12, 2: 12, 3: 12, 4: 12, 5: 12, 6: 12, 7: 12},
 
-	6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11},
-	7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 41, 6: 21, 7: 31}};
+						  6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11},
+						  7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 41, 6: 21, 7: 31}};
+
+/*const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7: 32}, // Positions initiales pour un coup du berger
+						  1: {0: 12, 1: 12, 2: 12, 3: 12, 4: 12, 5: 12, 6: 12, 7: 12},
+						  4: {              2: 41                                   },
+						  5: {                            4: 11                     },
+						  6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 0, 5: 11, 6: 11, 7: 11 },
+						  7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 0, 6: 21, 7: 31}};*/
 //const positionInitales = {3: {3: 62}, 5: {3: 61}, 7: {2: 51}};
 
 let IA;
@@ -49,7 +56,7 @@ function callbackAction(success,player,coupSpecial) {
 	}
 	player.hisOwnTurn = false;
 	player.adversaire.hisOwnTurn = true;
-	if (!player.isIA)
+	if (!player.isIA) {
 		player.socket.emit("displayLevel", {
 			tab: player.level,
 			playerType: player.playerType,
@@ -57,7 +64,8 @@ function callbackAction(success,player,coupSpecial) {
 			echec: isEchec(currentPlayerb, echec),
 			lastDeplacment: player.lastDeplacment
 		});
-	if (!player.adversaire.isIA)
+	}
+	if (!player.adversaire.isIA) {
 		player.adversaire.socket.emit("displayLevel", {
 			tab: player.level,
 			playerType: player.adversaire.playerType,
@@ -65,42 +73,29 @@ function callbackAction(success,player,coupSpecial) {
 			echec: isEchec(player.adversaire.playerType, echec),
 			lastDeplacment: player.lastDeplacment
 		});
-	else {
-		console.log("my type => "+player.playerType);
-		console.log("ia type => "+player.adversaire.playerType);
+	} else {
 		let ia = new IA(player.adversaire.playerType,echec, player.adversaire);
-		ia.applyIa();
+		setTimeout(() => {ia.applyIa()}, 100)
 	}
 }
-
-function action(caseA,caseB,callback,player) {
+//let count = 0;
+async function action(A,B,player) {
 	let echec = player.level;
 	let currentPlayerb = player.playerType;
 	let scorePlayersb = player.scorePlayers;
 	let infosCase = player.infosCase;
 
-	let A = caseNameToCoor(caseA),
-		B = caseNameToCoor(caseB);
-
-	if (callback == null) {
-		callback = callbackAction;
-	}
-
-	if (A == null | B == null) {
-		callback(false, player);
-		return;
-	}
-
 	const lA = A.l, cA = A.c, lB = B.l, cB = B.c;
 
 	if (!possibleMouvement(lA, cA, lB, cB, echec, currentPlayerb, infosCase)) {
-		callback(false, player);
-		return;
+		return {success: false, player};
 	}
-	player.lastDeplacment.lA = lA;
-	player.lastDeplacment.cA = cA;
-	player.lastDeplacment.lB = lB;
-	player.lastDeplacment.cB = cB;
+	if (!player.simule) {
+		player.lastDeplacment.lA = lA;
+		player.lastDeplacment.cA = cA;
+		player.lastDeplacment.lB = lB;
+		player.lastDeplacment.cB = cB;
+	}
 
 	let thisInfoCase = getInfoCase(lA,cA,infosCase);
 	if (thisInfoCase != null) {
@@ -132,45 +127,50 @@ function action(caseA,caseB,callback,player) {
 				cI += cD;
 				listMouv.push({l: lI, c: cI});
 			}
-			deplaceRec(() => {
-				const lP = listMouv[listMouv.length-1].l;
-				const cP = listMouv[listMouv.length-1].c;
-				if (listMouv[0].c != cA &
-					((currentPlayerb == 1 & getElem(echec,lP+1,cP)%10 == 2 & getInfoCase(lP+1,cP,infosCase).isLastDeplacment & getInfoCase(lP+1,cP,infosCase).justTwoDeplacment) |
-						(currentPlayerb == 2 & getElem(echec,lP-1,cP)%10 == 1 & getInfoCase(lP-1,cP,infosCase).isLastDeplacment & getInfoCase(lP-1,cP,infosCase).justTwoDeplacment))) {
-					if (currentPlayerb == 1) {
-						scorePlayersb[echec[lP+1][cP]%10][Math.floor(echec[lP+1][cP]/10)] -= 1;
-						echec[lP+1][cP] = 0;
-					} else if (currentPlayerb == 2) {
-						scorePlayersb[echec[lP-1][cP]%10][Math.floor(echec[lP-1][cP]/10)] -= 1;
-						echec[lP-1][cP] = 0;
-					}
-					if (!player.isIA)
-						player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
-					if (!player.adversaire.isIA)
-						player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType});
+			await deplace(lA,cA,listMouv,10+currentPlayerb,player);
+			const lP = listMouv[listMouv.length-1].l;
+			const cP = listMouv[listMouv.length-1].c;
+			if (listMouv[0].c != cA &
+				((currentPlayerb == 1 & getElem(echec,lP+1,cP)%10 == 2 & getInfoCase(lP+1,cP,infosCase).isLastDeplacment & getInfoCase(lP+1,cP,infosCase).justTwoDeplacment) |
+					(currentPlayerb == 2 & getElem(echec,lP-1,cP)%10 == 1 & getInfoCase(lP-1,cP,infosCase).isLastDeplacment & getInfoCase(lP-1,cP,infosCase).justTwoDeplacment))) {
+				if (currentPlayerb == 1) {
+					scorePlayersb[echec[lP+1][cP]%10][Math.floor(echec[lP+1][cP]/10)] -= 1;
+					echec[lP+1][cP] = 0;
+				} else if (currentPlayerb == 2) {
+					scorePlayersb[echec[lP-1][cP]%10][Math.floor(echec[lP-1][cP]/10)] -= 1;
+					echec[lP-1][cP] = 0;
 				}
-				let thisInfoCase = getInfoCase(lB,cB,infosCase);
-				thisInfoCase.isLastDeplacment = true;
-				for (let i=0;i<infosCase.length;i++) {
-					if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
-						infosCase[i].isLastDeplacment = false;
-					}
+				if (!player.isIA)
+					player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
+				if (!player.adversaire.isIA)
+					player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType});
+			}
+			thisInfoCase = getInfoCase(lB,cB,infosCase);
+			thisInfoCase.isLastDeplacment = true;
+			for (let i=0;i<infosCase.length;i++) {
+				if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
+					infosCase[i].isLastDeplacment = false;
 				}
-				if (Math.sqrt((lB-lA)**2) == 2) {
-					thisInfoCase.justTwoDeplacment = true;
-				} else {
-					thisInfoCase.justTwoDeplacment = false;
-				}
-				if ((currentPlayerb == 1 & lB == 0) | (currentPlayerb == 2 & lB == 7)) {
-					callback(true,player,{func: (player,rep) => {
+			}
+			if (Math.sqrt((lB-lA)**2) == 2) {
+				thisInfoCase.justTwoDeplacment = true;
+			} else {
+				thisInfoCase.justTwoDeplacment = false;
+			}
+			if ((currentPlayerb == 1 & lB == 0) | (currentPlayerb == 2 & lB == 7)) {
+				return{
+					success: true,
+					player,
+					coupSpecial: {
+						func: (player,rep) => {
 							promotion(lB,cB,player,rep);
-						}, msg: "Par quoi voulez vous remplacer ce pion?", reponses: ["Cavalier","Tour","Fou","Reine"]});
-					return;
-				}
-				callback(true,player);
-			},lA,cA,listMouv,10+currentPlayerb,player);
-			break;
+						},
+						msg: "Par quoi voulez vous remplacer ce pion?",
+						reponses: ["Cavalier","Tour","Fou","Reine"]
+					}
+				};
+			}
+			return {success: true,player};
 		case 2: //cavalier
 			listMouv = [];
 			if ((lB-lA)**2 == 1) {
@@ -190,17 +190,15 @@ function action(caseA,caseB,callback,player) {
 				listMouv.push({l: lB, c: cA})
 				listMouv.push({l: lB, c: cB});
 			}
-			deplaceRec(() => {
-				let thisInfoCase = getInfoCase(lB,cB,infosCase);
-				thisInfoCase.isLastDeplacment = true;
-				for (let i=0;i<infosCase.length;i++) {
-					if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
-						infosCase[i].isLastDeplacment = false;
-					}
+			await deplace(lA,cA,listMouv,20+currentPlayerb,player);
+			thisInfoCase = getInfoCase(lB,cB,infosCase);
+			thisInfoCase.isLastDeplacment = true;
+			for (let i=0;i<infosCase.length;i++) {
+				if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
+					infosCase[i].isLastDeplacment = false;
 				}
-				callback(true, player);
-			},lA,cA,listMouv,20+currentPlayerb,player);
-			break;
+			}
+			return {success: true, player};
 		case 3: //tour
 			if (cB != cA) {
 				lD = 0;
@@ -225,31 +223,42 @@ function action(caseA,caseB,callback,player) {
 				cI += cD;
 				listMouv.push({l: lI, c: cI});
 			}
-			deplaceRec(() => {
-				let thisInfoCase = getInfoCase(lB,cB,infosCase);
-				thisInfoCase.isLastDeplacment = true;
-				for (let i=0;i<infosCase.length;i++) {
-					if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
-						infosCase[i].isLastDeplacment = false;
-					}
+			await deplace(lA,cA,listMouv,30+currentPlayerb,player);
+			thisInfoCase = getInfoCase(lB,cB,infosCase);
+			thisInfoCase.isLastDeplacment = true;
+			for (let i=0;i<infosCase.length;i++) {
+				if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
+					infosCase[i].isLastDeplacment = false;
 				}
-				let echec = player.level;
-				if (thisInfoCase.nb == 1 ) {
-					if (echec[lB][cB-1] == 60+currentPlayerb & getInfoCase(lB,cB-1,infosCase).nb == 0) {
-						callback(true,player,{func: (player,rep) => {
+			}
+			if (thisInfoCase.nb == 1 ) {
+				if (echec[lB][cB-1] == 60+currentPlayerb & getInfoCase(lB,cB-1,infosCase).nb == 0) {
+					return {
+						success: true,
+						player,
+						coupSpecial: {
+							func: (player,rep) => {
 								roque(lB,cB,lB,cB-1,player,rep);
-							}, msg: "Effectuer un roque?", reponses: ["oui","non"]});
-						return;
-					} else if (echec[lB][cB+1] == 60+currentPlayerb & getInfoCase(lB,cB+1,infosCase).nb == 0) {
-						callback(true,player,{func: (player,rep) => {
+							},
+							msg: "Effectuer un roque?",
+							reponses: ["oui","non"]
+						}
+					};
+				} else if (echec[lB][cB+1] == 60+currentPlayerb & getInfoCase(lB,cB+1,infosCase).nb == 0) {
+					return {
+						success: true,
+						player,
+						coupSpecial: {
+							func: (player,rep) => {
 								roque(lB,cB,lB,cB+1,player,rep);
-							}, msg: "Effectuer un roque?", reponses: ["oui","non"]});
-						return;
-					}
+							},
+							msg: "Effectuer un roque?",
+							reponses: ["oui","non"]
+						}
+					};
 				}
-				callback(true,player);
-			},lA,cA,listMouv,30+currentPlayerb,player);
-			break;
+			}
+			return {success: true,player};
 		case 4: // fou
 			lD = 0;
 			cD = 0;
@@ -271,17 +280,15 @@ function action(caseA,caseB,callback,player) {
 				cI += cD;
 				listMouv.push({l: lI, c: cI});
 			}
-			deplaceRec(() => {
-				let thisInfoCase = getInfoCase(lB,cB,infosCase);
-				thisInfoCase.isLastDeplacment = true;
-				for (let i=0;i<infosCase.length;i++) {
-					if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
-						infosCase[i].isLastDeplacment = false;
-					}
+			await deplace(lA,cA,listMouv,40+currentPlayerb,player);
+			thisInfoCase = getInfoCase(lB,cB,infosCase);
+			thisInfoCase.isLastDeplacment = true;
+			for (let i=0;i<infosCase.length;i++) {
+				if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
+					infosCase[i].isLastDeplacment = false;
 				}
-				callback(true,player);
-			},lA,cA,listMouv,40+currentPlayerb,player);
-			break;
+			}
+			return {success: true,player};
 		case 5: // reine
 			lD = 0;
 			cD = 0;
@@ -303,86 +310,62 @@ function action(caseA,caseB,callback,player) {
 				cI += cD;
 				listMouv.push({l: lI, c: cI});
 			}
-			deplaceRec(() => {
-				let thisInfoCase = getInfoCase(lB,cB,infosCase);
-				thisInfoCase.isLastDeplacment = true;
-				for (let i=0;i<infosCase.length;i++) {
-					if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
-						infosCase[i].isLastDeplacment = false;
-					}
+			await deplace(lA,cA,listMouv,50+currentPlayerb,player);
+			thisInfoCase = getInfoCase(lB,cB,infosCase);
+			thisInfoCase.isLastDeplacment = true;
+			for (let i=0;i<infosCase.length;i++) {
+				if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
+					infosCase[i].isLastDeplacment = false;
 				}
-				callback(true,player);
-			},lA,cA,listMouv,50+currentPlayerb,player);
-			break;
+			}
+			return {success: true,player};
 		case 6: // roi
 			listMouv = [{l: lB, c: cB}];
-			deplaceRec(() => {
-				let thisInfoCase = getInfoCase(lB,cB,infosCase);
-				thisInfoCase.isLastDeplacment = true;
-				for (let i=0;i<infosCase.length;i++) {
-					if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
-						infosCase[i].isLastDeplacment = false;
-					}
+			await deplace(lA,cA,listMouv,60+currentPlayerb, player);
+			thisInfoCase = getInfoCase(lB,cB,infosCase);
+			thisInfoCase.isLastDeplacment = true;
+			for (let i=0;i<infosCase.length;i++) {
+				if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
+					infosCase[i].isLastDeplacment = false;
 				}
-				callback(true,player);
-			},lA,cA,listMouv,60+currentPlayerb,player);
-			break;
+			}
+			return {success: true,player};
 	}
 }
 
-function deplaceRec(callback,lP,cP,listMouv,type, player, i = 0, ms = 500) {
+async function deplace(lP,cP,listMouv,type, player, ms = 500) {
 	let echec = player.level;
 	let scorePlayersb = player.scorePlayers;
 	let currentPlayerb = player.currentPlayer;
 	let infosCase = player.infosCase;
-	if (i >= listMouv.length) {
-		if (typeof(callback) == "function") {
-			callback();
-		}
-		return;
-	}
-	if (echec[listMouv[i].l][listMouv[i].c] != 0) {
-		if (Math.floor(type/10) == 2 & i < listMouv.length-1) {
-			deplaceRec(callback,lP,cP,listMouv,type,player,i+1,ms);
-		} else if (Math.floor(type/10) == 1 & listMouv[i].c == cP) {
-			if (!player.isIA)
-				player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
-			if (!player.adversaire.isIA)
-				player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType});
-			if (typeof(callback) == "function") {
-				callback();
+
+	for (let i=0;i<listMouv.length;i++) {
+		if (echec[listMouv[i].l][listMouv[i].c] != 0) {
+			if (Math.floor(type/10) == 1 & listMouv[i].c == cP) {
+				//return {echec: echecb, scorePlayers: scorePlayersb, infosCase: infosCaseb};
+				return;
+			} else if (Math.floor(type/10) != 2 | i == listMouv.length-1) {
+				if (echec[listMouv[i].l][listMouv[i].c]%10 != currentPlayerb & echec[listMouv[i].l][listMouv[i].c] != 0) {
+					scorePlayersb[echec[listMouv[i].l][listMouv[i].c]%10][Math.floor(echec[listMouv[i].l][listMouv[i].c]/10)] -= 1;
+					let thisInfoCase = getInfoCase(lP,cP,infosCase);
+					thisInfoCase.l = listMouv[i].l;
+					thisInfoCase.c = listMouv[i].c;
+					echec[lP][cP] = 0;
+					echec[listMouv[i].l][listMouv[i].c] = type;
+					//return {echec: echecb, scorePlayers: scorePlayersb, infosCase: infosCaseb};
+				}
+				return;
 			}
 		} else {
-			if (echec[listMouv[i].l][listMouv[i].c]%10 != currentPlayerb) {
-				scorePlayersb[echec[listMouv[i].l][listMouv[i].c]%10][Math.floor(echec[listMouv[i].l][listMouv[i].c]/10)] -= 1;
-				echec[lP][cP] = 0;
-				echec[listMouv[i].l][listMouv[i].c] = type;
-				let thisInfoCase = getInfoCase(lP,cP,infosCase);
-				thisInfoCase.l = listMouv[i].l;
-				thisInfoCase.c = listMouv[i].c;
-				if (!player.isIA)
-					player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
-				if (!player.adversaire.isIA)
-					player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType});
-			}
-			if (typeof(callback) == "function") {
-				callback();
-			}
+			echec[lP][cP] = 0;
+			echec[listMouv[i].l][listMouv[i].c] = type;
+			let thisInfoCase = getInfoCase(lP,cP,infosCase);
+			thisInfoCase.l = listMouv[i].l;
+			thisInfoCase.c = listMouv[i].c;
+			lP = listMouv[i].l;
+			cP = listMouv[i].c;
 		}
-		return;
 	}
-	echec[lP][cP] = 0;
-	echec[listMouv[i].l][listMouv[i].c] = type;
-	let thisInfoCase = getInfoCase(lP,cP,infosCase);
-	thisInfoCase.l = listMouv[i].l;
-	thisInfoCase.c = listMouv[i].c;
-	if (!player.isIA)
-		player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
-	if (!player.adversaire.isIA)
-		player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType});
-	setTimeout(() => {
-		deplaceRec(callback,listMouv[i].l,listMouv[i].c,listMouv,type,player,i+1,ms);
-	}, ms);
 }
 
 function possibleMouvement(lA,cA,lB,cB,echec,currentPlayerb,infosCase) {
@@ -559,7 +542,7 @@ function genEchecTab(infosCase, scorePlayers) {
 		tab.push([]);
 		for (let c=0;c<8;c++) {
 			if (typeof(positionInitales[l]) != "undefined") {
-				if (typeof(positionInitales[l][c]) != "undefined") {
+				if (typeof(positionInitales[l][c]) != "undefined" && positionInitales[l][c] !== 0) {
 					tab[l].push(positionInitales[l][c]);
 					if (typeof(scorePlayers[positionInitales[l][c]%10][Math.floor(positionInitales[l][c]/10)]) == "undefined") {
 						scorePlayers[positionInitales[l][c]%10][Math.floor(positionInitales[l][c]/10)] = 1;
@@ -974,13 +957,34 @@ function remplace(str, A, B) {
 
 function copyTab(tab) {
 	let tab2 = [];
-	for (let l=0;l<tab.length;l++) {
-		tab2.push([]);
-		for (let c=0;c<tab[l].length;c++) {
-			tab2[l].push(tab[l][c]);
+	for (let i=0;i<tab.length;i++) {
+		if (typeof(tab[i]) != "object") {
+			tab2.push(tab[i]);
+		} else {
+			tab2.push(copyObj(tab[i]));
 		}
 	}
 	return tab2;
+}
+
+function copyObj(obj) {
+	if (Array.isArray(obj)) {
+		return copyTab(obj);
+	} else {
+		return copyDict(obj);
+	}
+}
+
+function copyDict(dict) {
+	let dict2 = {};
+	for (let key in dict) {
+		if (typeof(dict[key]) != "object") {
+			dict2[key] = dict[key];
+		} else {
+			dict2[key] = copyObj(dict[key]);
+		}
+	}
+	return dict2;
 }
 
 module.exports = {
@@ -989,8 +993,12 @@ module.exports = {
 	playerSearching,
 	remplace,
 	action,
+	callbackAction,
 	setIA,
-	possibleMouvement,
 	getPath,
-	coorToCaseName
+	copyTab,
+	copyObj,
+	echecEtMat,
+	getInfoCase,
+	caseNameToCoor
 }
