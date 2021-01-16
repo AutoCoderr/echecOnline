@@ -74,8 +74,13 @@ function callbackAction(success,player,coupSpecial) {
 			lastDeplacment: player.lastDeplacment
 		});
 	} else {
+		player.socket.emit("msg", {type: 'info', msg: "L'ia réfléchit..."})
 		let ia = new IA(player.adversaire.playerType,echec, player.adversaire);
-		setTimeout(() => {ia.applyIa()}, 100)
+		setTimeout(() => {
+			ia.applyIa().then(() => {
+				player.socket.emit("msg", {type: "empty"});
+			});
+		}, 100)
 	}
 }
 //let count = 0;
@@ -333,6 +338,12 @@ async function action(A,B,player) {
 	}
 }
 
+function timeoutAwait(ms) {
+	return new Promise(resolve => {
+		setTimeout(resolve, ms);
+	})
+}
+
 async function deplace(lP,cP,listMouv,type, player, ms = 500) {
 	let echec = player.level;
 	let scorePlayersb = player.scorePlayers;
@@ -364,6 +375,14 @@ async function deplace(lP,cP,listMouv,type, player, ms = 500) {
 			thisInfoCase.c = listMouv[i].c;
 			lP = listMouv[i].l;
 			cP = listMouv[i].c;
+			if (!player.simule) {
+				if (!player.isIA)
+					player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
+				if (!player.adversaire.isIA) {
+					player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType});
+				}
+				await timeoutAwait(ms);
+			}
 		}
 	}
 }

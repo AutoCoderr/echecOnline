@@ -23,7 +23,7 @@ class IA {
 		this.debug = debug;
 	}
 
-	applyIa(profondeurMax = 4) {
+	async applyIa(profondeurMax = 4) {
 		if (!this.player.playing) {
 			return;
 		}
@@ -32,17 +32,19 @@ class IA {
 		}
 		this.iaStarting = true;
 		this.profondeurMax = profondeurMax;
+
 		console.log("start IA");
 		console.log("Veuillez patienter...");
-		this.startIa().then((res) => {
-			console.log("IA executed");
-			console.log(this.taille+" possibilités analysées");
-			console.log("coupures alpha beta =>");
-			console.log(this.nbCoupureAlphaBeta);
-			action({l: res.A.l, c: res.A.c},{l: res.B.l, c: res.B.c}, this.player).then((res) => {
-				callbackAction(res.success, res.player, res.coupSpecial);
-			});
-		});
+
+		const resIa = await this.startIa()
+
+		console.log("IA executed");
+		console.log(this.taille+" possibilités analysées");
+		console.log("coupures alpha beta =>");
+		console.log(this.nbCoupureAlphaBeta);
+
+		const actionRes = await action({l: resIa.A.l, c: resIa.A.c},{l: resIa.B.l, c: resIa.B.c}, this.player)
+		callbackAction(actionRes.success, actionRes.player, actionRes.coupSpecial);
 	}
 
 	async startIa() {
