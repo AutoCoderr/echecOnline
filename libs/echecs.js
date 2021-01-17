@@ -17,6 +17,13 @@ const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7
 						  6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11},
 						  7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 41, 6: 21, 7: 31}};
 
+/*const positionInitales = {0: {0: 0,  1: 0,  2: 0,  3: 0,  4: 62, 5: 0,  6: 0, 7: 32}, // Test echec et mat avec possibilité de roque
+						  1: {0: 12, 1: 51,  2: 12, 3: 12,   4: 12, 5: 12, 6: 0, 7: 12},
+						  2: {                                                 7: 41},
+	                      5: {                                   5: 0               },
+						  6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11},
+						  7: {0: 31, 1: 21, 2: 41, 3: 0, 4: 61, 5: 41, 6: 21, 7: 31}};*/
+
 /*const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7: 32}, // Positions initiales pour un coup du berger
 						  1: {0: 12, 1: 12, 2: 12, 3: 12, 4: 12, 5: 12, 6: 12, 7: 12},
 						  4: {              2: 41                                   },
@@ -628,16 +635,21 @@ function gameOver(player, winner) {
 	player.adversaire.playing = false;
 
 	let echec = player.level;
-
-	player.socket.emit("displayLevel", {tab: echec, playerType: player.playerType});
-	player.adversaire.socket.emit("displayLevel", {tab: echec, playerType: player.adversaire.playerType});
+	if (!player.isIA)
+		player.socket.emit("displayLevel", {tab: echec, playerType: player.playerType});
+	if (!player.adversaire.isIA)
+		player.adversaire.socket.emit("displayLevel", {tab: echec, playerType: player.adversaire.playerType});
 
 	if (winner == null) {
-		player.socket.emit("endGame", {playerType: player.playerType});
-		player.adversaire.socket.emit("endGame", {playerType: player.adversaire.playerType});
+		if (!player.isIA)
+			player.socket.emit("endGame", {playerType: player.playerType, opponentIsIA: player.adversaire.isIA});
+		if (!player.adversaire.isIA)
+			player.adversaire.socket.emit("endGame", {playerType: player.adversaire.playerType, opponentIsIA: player.isIA});
 	} else {
-		player.socket.emit("endGame", {playerType: player.playerType, winner: winner});
-		player.adversaire.socket.emit("endGame", {playerType: player.adversaire.playerType, winner: winner});
+		if (!player.isIA)
+			player.socket.emit("endGame", {playerType: player.playerType, winner: winner, opponentIsIA: player.adversaire.isIA});
+		if (!player.adversaire.isIA)
+			player.adversaire.socket.emit("endGame", {playerType: player.adversaire.playerType, winner: winner, opponentIsIA: player.isIA});
 	}
 
 	player.playerType = null;
@@ -1019,5 +1031,6 @@ module.exports = {
 	copyObj,
 	echecEtMat,
 	getInfoCase,
-	caseNameToCoor
+	caseNameToCoor,
+	gameOver
 }

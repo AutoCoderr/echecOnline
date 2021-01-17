@@ -1,7 +1,7 @@
 let http = require('http'),
     url = require('url'),
     fs = require('fs');
-const {playerSearching, players, startGame, remplace, action, setIA, callbackAction, caseNameToCoor} = require("./libs/echecs");
+const {playerSearching, players, startGame, remplace, action, setIA, callbackAction, caseNameToCoor, gameOver} = require("./libs/echecs");
 const { IA } = require("./libs/ia");
 setIA(IA);
 
@@ -93,7 +93,7 @@ io.sockets.on('connection', function (socket) {
         pseudo = pseudo+n;
         players[pseudo] = {pseudo: pseudo, level: null, adversaire: null, playerType: null,
             socket: socket, demmanded: "", playing: false, hisOwnTurn: null,
-            voteToRestart: null, infosCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false};
+            voteToRestart: null, infosCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false, isIA: false};
         socket.datas = players[pseudo];
         console.log("new connected! : "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
         socket.emit("newPseudo", pseudo)
@@ -214,35 +214,42 @@ io.sockets.on('connection', function (socket) {
         if (socket.datas.adversaire == null) {
             return;
         }
-        socket.datas.adversaire.voteToRestart = null;
-        socket.datas.voteToRestart = null;
+        if (socket.datas.adversaire.isIA) {
+            delete players[socket.datas.adversaire.pseudo];
+        } else {
+            socket.datas.adversaire.voteToRestart = null;
+            socket.datas.adversaire.socket.emit("quitParty");
+            socket.datas.adversaire.adversaire = null;
+        }
 
-        socket.datas.adversaire.socket.emit("quitParty");
         socket.emit("quitParty");
-
-        socket.datas.adversaire.adversaire = null;
         socket.datas.adversaire = null;
+        socket.datas.voteToRestart = null;
     });
 
     socket.on("restart", function () {
         if (typeof(socket.datas) == "undefined") {
             return;
         }
-        if (socket.datas.voteToRestart | socket.datas.voteToRestart == null) {
+        if (socket.datas.voteToRestart || socket.datas.voteToRestart == null) {
             return;
         }
-        socket.datas.voteToRestart = true;
-        let nb;
-        if (socket.datas.adversaire.voteToRestart) {
-            nb = 2;
-            setTimeout(() => {
-                startGame(socket.datas, socket.datas.adversaire);
-            }, 400);
+        if (!socket.datas.adversaire.isIA) {
+            socket.datas.voteToRestart = true;
+            let nb;
+            if (socket.datas.adversaire.voteToRestart) {
+                nb = 2;
+                setTimeout(() => {
+                    startGame(socket.datas, socket.datas.adversaire);
+                }, 400);
+            } else {
+                nb = 1;
+            }
+            socket.emit("voteToRestart", nb);
+            socket.datas.adversaire.socket.emit("voteToRestart", nb);
         } else {
-            nb = 1;
+            startGame(socket.datas, socket.datas.adversaire);
         }
-        socket.emit("voteToRestart", nb);
-        socket.datas.adversaire.socket.emit("voteToRestart", nb);
     });
 
     socket.on('disconnect', function() { // ----------------------> DECONNEXION D'UN CLIENT <---------------------------------------
@@ -291,8 +298,12 @@ io.sockets.on('connection', function (socket) {
         if (!player.playing || player.adversaire == null) {
             socket.emit("msg", {type: "error", msg: "Vous ne pouvez pas abandonner."});
         } else {
-            player.surrendDemmanded = true;
-            player.adversaire.socket.emit("proposeSurrend");
+            if (!player.adversaire.isIA) {
+                player.surrendDemmanded = true;
+                player.adversaire.socket.emit("proposeSurrend");
+            } else {
+                gameOver(player.adversaire, player.adversaire.playerType);
+            }
         }
     });
 

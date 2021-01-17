@@ -204,7 +204,7 @@
         }
         str += "</table>";
         document.getElementById("echec").innerHTML = str;
-        document.getElementById("buttons").innerHTML = "<button class='btn btn-danger' type='button' onclick='demandSurrend()'>Abondonner</button>";
+        document.getElementById("buttons").innerHTML = "<button class='btn btn-danger' type='button' onclick='demandSurrend()'>Abandonner</button>";
 
         if (typeof(datas.hisOwnTurn) != "undefined") {
             if (datas.hisOwnTurn) {
@@ -267,7 +267,7 @@
 
         str += "<br/><button class='btn btn-danger' type='button' onclick='quitParty()'>Menu Principal</button>";
 
-        str += "<button class='btn btn-danger' type='button' onclick='restart()'>Rejouer</button> (<span id='voteToRestart'>0</span> vote sur 2)";
+        str += "<button class='btn btn-danger' type='button' onclick='restart()'>Rejouer</button> "+(!datas.opponentIsIA ? "(<span id='voteToRestart'>0</span> vote sur 2)" : "");
         document.getElementById("msg").innerHTML = str;
 
         document.getElementById("buttons").innerHTML = "";
@@ -357,7 +357,9 @@
     }
 
     function demandSurrend() {
-        document.getElementById("msg").innerHTML = "<font color='#008DC0'>Demande d'abandon envoyé!</font>";
-        socket.emit("demandSurrend");
+        if (confirm("Êtes vous sûre de vouloir abandonner?")) {
+            document.getElementById("msg").innerHTML = "<font color='#008DC0'>Demande d'abandon envoyé!</font>";
+            socket.emit("demandSurrend");
+        }
     }
 </script>
