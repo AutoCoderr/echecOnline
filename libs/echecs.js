@@ -18,8 +18,8 @@ const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7
 						  7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 41, 6: 21, 7: 31}};
 
 /*const positionInitales = {0: {0: 0,  1: 0,  2: 0,  3: 0,  4: 62, 5: 0,  6: 0, 7: 32}, // Test echec et mat avec possibilité de roque
-						  1: {0: 12, 1: 51,  2: 12, 3: 12,   4: 12, 5: 12, 6: 0, 7: 12},
-						  2: {                                                 7: 41},
+						  1: {0: 12, 1: 51,  2: 12, 3: 12,4: 12, 5: 0,  6: 0, 7: 12},
+						  2: {                                                 7: 0},
 	                      5: {                                   5: 0               },
 						  6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11},
 						  7: {0: 31, 1: 21, 2: 41, 3: 0, 4: 61, 5: 41, 6: 21, 7: 31}};*/
@@ -91,7 +91,7 @@ async function callbackAction(success,player,coupSpecial) {
 	}
 }
 //let count = 0;
-async function action(A,B,player) {
+async function action(A,B,player,) {
 	let echec = player.level;
 	let currentPlayerb = player.playerType;
 	let scorePlayersb = player.scorePlayers;
@@ -178,7 +178,8 @@ async function action(A,B,player) {
 							promotion(lB,cB,player,rep);
 						},
 						msg: "Par quoi voulez vous remplacer ce pion?",
-						reponses: ["Cavalier","Tour","Fou","Reine"]
+						reponses: ["Cavalier","Tour","Fou","Reine"],
+						name: "promotion"
 					}
 				};
 			}
@@ -253,7 +254,8 @@ async function action(A,B,player) {
 								roque(lB,cB,lB,cB-1,player,rep);
 							},
 							msg: "Effectuer un roque?",
-							reponses: ["oui","non"]
+							reponses: ["oui","non"],
+							name: "roque"
 						}
 					};
 				} else if (echec[lB][cB+1] == 60+currentPlayerb & getInfoCase(lB,cB+1,infosCase).nb == 0) {
@@ -265,7 +267,8 @@ async function action(A,B,player) {
 								roque(lB,cB,lB,cB+1,player,rep);
 							},
 							msg: "Effectuer un roque?",
-							reponses: ["oui","non"]
+							reponses: ["oui","non"],
+							name: "roque"
 						}
 					};
 				}

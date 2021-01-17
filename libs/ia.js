@@ -44,6 +44,9 @@ class IA {
 		console.log(this.nbCoupureAlphaBeta);
 
 		const actionRes = await action({l: resIa.A.l, c: resIa.A.c},{l: resIa.B.l, c: resIa.B.c}, this.player)
+		if (actionRes.coupSpecial !== undefined && resIa.coupSpecialReponse !== undefined) {
+			actionRes.coupSpecial.func(this.player,resIa.coupSpecialReponse);
+		}
 		callbackAction(actionRes.success, actionRes.player, actionRes.coupSpecial);
 	}
 
@@ -64,7 +67,7 @@ class IA {
 			}
 		}
 
-		return {A: {l: max.lA, c: max.cA}, B: {l: max.lB, c: max.cB}/*,max.coupSpecial*/};
+		return {A: {l: max.lA, c: max.cA}, B: {l: max.lB, c: max.cB}, coupSpecialReponse: max.coupSpecialReponse};
 	}
 
 	async genTree(tree, profondeur = 0, currentPlayerb = this.currentPlayer) {
@@ -76,7 +79,8 @@ class IA {
 		if (profondeur >= this.profondeurMax) {
 			return true;
 		}
-		if (await echecEtMat({level: tree.echec,playerType: 1}) || await echecEtMat({level: tree.echec,playerType: 1})) {
+		if (await echecEtMat({level: tree.echec, playerType: 1, scorePlayers: tree.scorePlayers, infosCase: tree.infosCase, simule: true}) ||
+			await echecEtMat({level: tree.echec, playerType: 2, scorePlayers: tree.scorePlayers, infosCase: tree.infosCase, simule: true})) {
 			return true;
 		}
 		let coupureAlphaBeta = false;
@@ -99,7 +103,7 @@ class IA {
 
 						let { coupSpecial, success } = datas;
 
-						/*if (coupSpecial !== undefined) {
+						if (coupSpecial !== undefined) {
 							//this.log("genTree "+profondeur+" n°"+this.treeLevels[profondeur]+" > test case "+l+";"+c+" > test mouv "+i+" > coupSpecial");
 							let reponses = coupSpecial.reponses, func = coupSpecial.func;
 							this.taille += reponses.length;
@@ -108,12 +112,29 @@ class IA {
 								let infosCasebb = copyObj(infosCaseb);
 								let scorePlayersbb = copyObj(scorePlayersb);
 
-								await func(reponses[j],infosCasebb,scorePlayersbb,currentPlayerb,echecbb,true);
+								await func({
+									infosCase: infosCasebb,
+									scorePlayers: scorePlayersbb,
+									playerType: currentPlayerb,
+									level: echecbb,
+									simule: true},
+									reponses[j]);
 
 								let score = await this.getScore(scorePlayersbb,echecbb, infosCasebb, coupSpecial, reponses[j]);
-
-								tree.branchs.push({lA: l, cA: c, lB: mouvs[i].l, cB: mouvs[i].c, coupSpecial: () => {func(reponses[j],infosCase,scorePlayers,currentPlayer,echec,false);}, echec: echecbb, infosCase: infosCasebb,
-									scorePlayers: scorePlayersbb, score: score, profondeur: profondeur+1, parent: tree, nbNode: tree.branchs.length});
+								tree.branchs.push({
+									lA: l,
+									cA: c,
+									lB: mouvs[i].l,
+									cB: mouvs[i].c,
+									coupSpecialReponse: reponses[j],
+									echec: echecbb,
+									infosCase: infosCasebb,
+									scorePlayers: scorePlayersbb,
+									score: score,
+									profondeur: profondeur + 1,
+									parent: tree,
+									nbNode: tree.branchs.length
+								});
 								await this.genTree(tree.branchs[tree.branchs.length-1],profondeur+1,(currentPlayerb === 1 ? 2 : 1));
 								if ((profondeur%2 === 1 & score < toGet) || // applique l'algo mini max
 									(profondeur%2 === 0 & score > toGet) ||
@@ -128,7 +149,7 @@ class IA {
 							if (coupureAlphaBeta) {
 								break;
 							}
-						} else {*/
+						} else {
 							if (success) {
 								this.taille += 1;
 
@@ -152,6 +173,7 @@ class IA {
 									break;
 								}
 							}
+						}
 					}
 				}
 			}
