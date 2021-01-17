@@ -37,7 +37,7 @@ function setIA(UneIA) {
 	IA = UneIA;
 }
 
-function callbackAction(success,player,coupSpecial) {
+async function callbackAction(success,player,coupSpecial) {
 	let currentPlayerb = player.playerType;
 	let echec = player.level;
 	choicedCases = [];
@@ -49,10 +49,10 @@ function callbackAction(success,player,coupSpecial) {
 		}
 		player.socket.emit("msg", {type: "empty"});
 	}
-	if (echecEtMat(player.adversaire)) {
+	if (await echecEtMat(player.adversaire)) {
 		gameOver(player,player.playerType);
 		return;
-	} else if (echecEtMat(player)) {
+	} else if (await echecEtMat(player)) {
 		gameOver(player.adversaire,player.adversaire.playerType);
 		return;
 	}
@@ -87,7 +87,7 @@ function callbackAction(success,player,coupSpecial) {
 			ia.applyIa().then(() => {
 				player.socket.emit("msg", {type: "empty"});
 			});
-		}, 100)
+		}, 100);
 	}
 }
 //let count = 0;
@@ -686,11 +686,29 @@ function promotion(l,c,player,rep) {
 		echec[l][c] = 50+currentPlayer;
 		scorePlayers[currentPlayer][1] -= 1;
 	}
-	player.hisOwnTurn = false;
-	player.adversaire.hisOwnTurn = true;
-	player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType, hisOwnTurn: player.hisOwnTurn, echec: isEchec(player.playerType,echec), lastDeplacment: player.lastDeplacment});
-	player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType, hisOwnTurn: player.adversaire.hisOwnTurn, echec: isEchec(player.adversaire.playerType,echec), lastDeplacment: player.lastDeplacment});
-	player.functionCoupSpecial = null;
+	if (!player.simule) {
+		player.hisOwnTurn = false;
+		player.adversaire.hisOwnTurn = true;
+		if (!player.isIA) {
+			player.socket.emit("displayLevel", {
+				tab: player.level,
+				playerType: player.playerType,
+				hisOwnTurn: player.hisOwnTurn,
+				echec: isEchec(player.playerType, echec),
+				lastDeplacment: player.lastDeplacment
+			});
+		}
+		if (!player.adversaire.isIA) {
+			player.adversaire.socket.emit("displayLevel", {
+				tab: player.level,
+				playerType: player.adversaire.playerType,
+				hisOwnTurn: player.adversaire.hisOwnTurn,
+				echec: isEchec(player.adversaire.playerType, echec),
+				lastDeplacment: player.lastDeplacment
+			});
+		}
+		player.functionCoupSpecial = null;
+	}
 }
 
 function roque(lT,cT,lR,cR,player,rep) {
@@ -708,11 +726,29 @@ function roque(lT,cT,lR,cR,player,rep) {
 			echec[lR][cT-1] = 60+player.playerType;
 		}
 	}
-	player.hisOwnTurn = false;
-	player.adversaire.hisOwnTurn = true;
-	player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType, hisOwnTurn: player.hisOwnTurn, echec: isEchec(player.playerType,echec), lastDeplacment: player.lastDeplacment});
-	player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType, hisOwnTurn: player.adversaire.hisOwnTurn, echec: isEchec(player.adversaire.playerType,echec), lastDeplacment: player.lastDeplacment});
-	player.functionCoupSpecial = null;
+	if (!player.simule) {
+		player.hisOwnTurn = false;
+		player.adversaire.hisOwnTurn = true;
+		if (!player.isIA) {
+			player.socket.emit("displayLevel", {
+				tab: player.level,
+				playerType: player.playerType,
+				hisOwnTurn: player.hisOwnTurn,
+				echec: isEchec(player.playerType, echec),
+				lastDeplacment: player.lastDeplacment
+			});
+		}
+		if (!player.adversaire.isIA) {
+			player.adversaire.socket.emit("displayLevel", {
+				tab: player.level,
+				playerType: player.adversaire.playerType,
+				hisOwnTurn: player.adversaire.hisOwnTurn,
+				echec: isEchec(player.adversaire.playerType, echec),
+				lastDeplacment: player.lastDeplacment
+			});
+		}
+		player.functionCoupSpecial = null;
+	}
 }
 
 function isEchec(currentPlayer,echec) {
@@ -943,9 +979,8 @@ function getPath(l,c,echec) {
 	return mouvs;
 }
 
-function echecEtMat(player) {
-	let echec = player.level;
-	let currentPlayer = player.playerType;
+async function echecEtMat(player) {
+	let { level: echec, playerType: currentPlayer, scorePlayers, infosCase } = player;
 
 	if (!isEchec(currentPlayer,echec)) {
 		return false;
@@ -956,10 +991,23 @@ function echecEtMat(player) {
 			if (echec[l][c]%10 == currentPlayer) {
 				let mouvs = getPath(l,c,echec);
 				for (let i=0;i<mouvs.length;i++) {
+					if (!possibleMouvement(l,c,mouvs[i].l,mouvs[i].c,echec,currentPlayer,player.infosCase)) {
+						continue;
+					}
 					let echecb = copyTab(echec);
-					echecb[mouvs[i].l][mouvs[i].c] = echecb[l][c];
-					echecb[l][c] = 0;
-					if (!isEchec(currentPlayer,echecb)) {
+					let falsePlayer = {
+						level: echecb,
+						playerType: currentPlayer,
+						scorePlayers: scorePlayers,
+						infosCase: infosCase,
+						simule: true
+					};
+					let { success } = await action({l, c}, {
+						l: mouvs[i].l,
+						c: mouvs[i].c
+					}, falsePlayer);
+
+					if (success && !isEchec(currentPlayer, echecb)) {
 						return false;
 					}
 				}

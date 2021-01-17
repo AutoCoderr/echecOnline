@@ -76,7 +76,7 @@ class IA {
 		if (profondeur >= this.profondeurMax) {
 			return true;
 		}
-		if (echecEtMat({level: tree.echec,playerType: 1}) || echecEtMat({level: tree.echec,playerType: 1})) {
+		if (await echecEtMat({level: tree.echec,playerType: 1}) || await echecEtMat({level: tree.echec,playerType: 1})) {
 			return true;
 		}
 		let coupureAlphaBeta = false;
@@ -110,7 +110,7 @@ class IA {
 
 								await func(reponses[j],infosCasebb,scorePlayersbb,currentPlayerb,echecbb,true);
 
-								let score = this.getScore(scorePlayersbb,echecbb, infosCasebb, coupSpecial, reponses[j]);
+								let score = await this.getScore(scorePlayersbb,echecbb, infosCasebb, coupSpecial, reponses[j]);
 
 								tree.branchs.push({lA: l, cA: c, lB: mouvs[i].l, cB: mouvs[i].c, coupSpecial: () => {func(reponses[j],infosCase,scorePlayers,currentPlayer,echec,false);}, echec: echecbb, infosCase: infosCasebb,
 									scorePlayers: scorePlayersbb, score: score, profondeur: profondeur+1, parent: tree, nbNode: tree.branchs.length});
@@ -132,7 +132,7 @@ class IA {
 							if (success) {
 								this.taille += 1;
 
-								let score = this.getScore(scorePlayersb,echecb, infosCaseb);
+								let score = await this.getScore(scorePlayersb,echecb, infosCaseb);
 
 								tree.branchs.push({lA: l, cA: c, lB: mouvs[i].l, cB: mouvs[i].c, echec: echecb, infosCase: infosCaseb,
 									scorePlayers: scorePlayersb, score: score, profondeur: profondeur+1, parent: tree, coupSpecial: null, nbNode: tree.branchs.length});
@@ -178,7 +178,7 @@ class IA {
 	}
 
 
-	getScore(scorePlayersbb,echecbb, infosCasebb , coupSpecial = null, reponse = null) {
+	async getScore(scorePlayersbb,echecbb, infosCasebb , coupSpecial = null, reponse = null) {
 		const scorePlayers = this.player.scorePlayers,
 			currentPlayer = this.player.playerType,
 			echec = this.echec,
@@ -199,10 +199,10 @@ class IA {
 				}
 			}
 		}
-		if (echecEtMat({level: echecbb,playerType: 1})) {
+		if (await echecEtMat({level: echecbb,playerType: 1, scorePlayers: scorePlayersbb, infosCase: infosCasebb, simule: true})) {
 			score -= 10000000;
 		}
-		if (echecEtMat({level: echecbb,playerType: 2})) {
+		if (await echecEtMat({level: echecbb,playerType: 2, scorePlayers: scorePlayersbb, infosCase: infosCasebb, simule: true})) {
 			score += 10000000;
 		}
 		if (currentPlayer == 2) {
