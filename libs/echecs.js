@@ -81,15 +81,20 @@ async function callbackAction(success,player,coupSpecial) {
 			lastDeplacment: player.lastDeplacment
 		});
 	} else {
-		player.socket.emit("msg", {type: 'info', msg: "L'ia réfléchit..."})
-		let ia = new IA(player.adversaire.playerType,echec, player.adversaire);
-		setTimeout(() => {
-			ia.applyIa().then(() => {
-				player.socket.emit("msg", {type: "empty"});
-			});
-		}, 100);
+		startIa(player.adversaire);
 	}
 }
+
+function startIa(player) {
+	player.adversaire.socket.emit("msg", {type: 'info', msg: "L'ia réfléchit..."})
+	let ia = new IA(player.playerType,player.level, player);
+	setTimeout(() => {
+		ia.applyIa().then(() => {
+			player.adversaire.socket.emit("msg", {type: "empty"});
+		});
+	}, 100);
+}
+
 //let count = 0;
 async function action(A,B,player,) {
 	let echec = player.level;
@@ -244,35 +249,6 @@ async function action(A,B,player,) {
 					infosCase[i].isLastDeplacment = false;
 				}
 			}
-			if (thisInfoCase.nb == 1 ) {
-				if (echec[lB][cB-1] == 60+currentPlayerb & getInfoCase(lB,cB-1,infosCase).nb == 0) {
-					return {
-						success: true,
-						player,
-						coupSpecial: {
-							func: (player,rep) => {
-								roque(lB,cB,lB,cB-1,player,rep);
-							},
-							msg: "Effectuer un roque?",
-							reponses: ["oui","non"],
-							name: "roque"
-						}
-					};
-				} else if (echec[lB][cB+1] == 60+currentPlayerb & getInfoCase(lB,cB+1,infosCase).nb == 0) {
-					return {
-						success: true,
-						player,
-						coupSpecial: {
-							func: (player,rep) => {
-								roque(lB,cB,lB,cB+1,player,rep);
-							},
-							msg: "Effectuer un roque?",
-							reponses: ["oui","non"],
-							name: "roque"
-						}
-					};
-				}
-			}
 			return {success: true,player};
 		case 4: // fou
 			lD = 0;
@@ -343,6 +319,25 @@ async function action(A,B,player,) {
 				if (infosCase[i].l != lB & infosCase[i].c != cB & infosCase[i].isLastDeplacment) {
 					infosCase[i].isLastDeplacment = false;
 				}
+			}
+			if (echec[lB][cB+1] === 30+currentPlayerb || echec[lB][cB-1] === 30+currentPlayerb) {
+				const cT = echec[lB][cB+1] === 30+currentPlayerb ? cB+1 : cB-1;
+				const towerInfoCase = getInfoCase(lB,cT,infosCase);
+				if (towerInfoCase != null && towerInfoCase.nb === 0) {
+					return {
+						success: true,
+						player,
+						coupSpecial: {
+							func: (player,rep) => {
+								roque(lB,cB,lB,cT,player,rep);
+							},
+							msg: "Effectuer un roque?",
+							reponses: ["oui","non"],
+							name: "roque"
+						}
+					};
+				}
+
 			}
 			return {success: true,player};
 	}
@@ -822,20 +817,21 @@ function promotion(l,c,player,rep) {
 	}
 }
 
-function roque(lT,cT,lR,cR,player,rep) {
+function roque(lR,cR,lT,cT,player,rep) {
 	let echec = player.level;
 	if (rep == "oui") {
 		let infosCase = player.infosCase;
-		let thisInfoCase = getInfoCase(lR,cR,infosCase);
+		let towerInfoCase = getInfoCase(lT,cT,infosCase);
 		if (cT == cR+1) {
-			thisInfoCase.c = cT+1;
-			echec[lR][cR] = 0;
-			echec[lR][cT+1] = 60+player.playerType;
+			towerInfoCase.c = cR-1;
+			echec[lT][cT] = 0;
+			echec[lR][cR-1] = 30+player.playerType;
 		} else if (cT == cR-1) {
-			thisInfoCase.c = cT-1;
-			echec[lR][cR] = 0;
-			echec[lR][cT-1] = 60+player.playerType;
+			towerInfoCase.c = cR+1;
+			echec[lT][cT] = 0;
+			echec[lR][cR+1] = 30+player.playerType;
 		}
+		towerInfoCase.nb += 1;
 	}
 	if (!player.simule) {
 		player.hisOwnTurn = false;
@@ -903,6 +899,9 @@ function getPath(l,c,echec) {
 						mouvs.push({l: l-1, c: c+1});
 					}
 				}
+				if (l > 1 && echec[l-2][c] === 0) {
+					mouvs.push({l: l-2, c: c});
+				}
 			} else if (currentPlayer == 2 & l+1 < echec.length) {
 				if (echec[l+1][c] == 0) {
 					mouvs.push({l: l+1, c: c});
@@ -916,6 +915,9 @@ function getPath(l,c,echec) {
 					if (echec[l+1][c+1]%10 != currentPlayer) {
 						mouvs.push({l: l+1, c: c+1});
 					}
+				}
+				if (l < echec.length-2 && echec[l+2][c] === 0) {
+					mouvs.push({l: l+2, c: c});
 				}
 			}
 			break;
@@ -1188,5 +1190,6 @@ module.exports = {
 	echecEtMat,
 	getInfoCase,
 	caseNameToCoor,
-	gameOver
+	gameOver,
+	startIa
 }

@@ -1,7 +1,7 @@
 let http = require('http'),
     url = require('url'),
     fs = require('fs');
-const {playerSearching, players, startGame, remplace, action, setIA, callbackAction, caseNameToCoor, gameOver} = require("./libs/echecs");
+const {playerSearching, players, startGame, remplace, action, setIA, callbackAction, caseNameToCoor, gameOver, startIa} = require("./libs/echecs");
 const { IA } = require("./libs/ia");
 setIA(IA);
 
@@ -289,7 +289,11 @@ io.sockets.on('connection', function (socket) {
         if (typeof(socket.datas.functionCoupSpecial) != "function") {
             return;
         }
-        socket.datas.functionCoupSpecial(socket.datas,rep);
+        const player = socket.datas;
+        player.functionCoupSpecial(socket.datas,rep);
+        if (player.adversaire.isIA) {
+            startIa(player.adversaire);
+        }
     });
 
     socket.on("demandSurrend", function () {
