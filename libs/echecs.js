@@ -1,3 +1,5 @@
+const { Worker } = require('worker_threads');
+
 let players = {},
 	playerSearching = {};
 
@@ -31,11 +33,6 @@ const positionInitales = {0: {0: 32, 1: 22, 2: 42, 3: 52, 4: 62, 5: 42, 6: 22, 7
 						  6: {0: 11, 1: 11, 2: 11, 3: 11, 4: 0, 5: 11, 6: 11, 7: 11 },
 						  7: {0: 31, 1: 21, 2: 41, 3: 51, 4: 61, 5: 0, 6: 21, 7: 31}};*/
 //const positionInitales = {3: {3: 62}, 5: {3: 61}, 7: {2: 51}};
-
-let IA;
-function setIA(UneIA) {
-	IA = UneIA;
-}
 
 async function callbackAction(success,player,coupSpecial) {
 	let currentPlayerb = player.playerType;
@@ -87,12 +84,20 @@ async function callbackAction(success,player,coupSpecial) {
 
 function startIa(player) {
 	player.adversaire.socket.emit("msg", {type: 'info', msg: "L'ia réfléchit..."})
-	let ia = new IA(player.playerType,player.level, player);
-	setTimeout(() => {
-		ia.applyIa().then(() => {
-			player.adversaire.socket.emit("msg", {type: "empty"});
-		});
-	}, 100);
+
+	const worker = new Worker("./libs/ia.js");
+	worker.postMessage({...player, socket: null, adversaire: null});
+	worker.on('message', async resIa => {
+		const actionRes = await action({l: resIa.A.l, c: resIa.A.c},{l: resIa.B.l, c: resIa.B.c}, player)
+		if (actionRes.coupSpecial !== undefined && resIa.coupSpecialReponse !== undefined) {
+			actionRes.coupSpecial.func(player,resIa.coupSpecialReponse);
+		}
+		callbackAction(actionRes.success, actionRes.player, actionRes.coupSpecial);
+		player.adversaire.socket.emit("msg", {type: "empty"});
+	});
+	worker.on('exit', code => {
+		console.log("worker finished ("+code+")");
+	});
 }
 
 //let count = 0;
@@ -1183,7 +1188,6 @@ module.exports = {
 	remplace,
 	action,
 	callbackAction,
-	setIA,
 	getPath,
 	copyTab,
 	copyObj,

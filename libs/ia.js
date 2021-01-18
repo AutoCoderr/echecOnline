@@ -1,4 +1,5 @@
-const {getPath, action, copyTab, copyObj, echecEtMat, callbackAction, getInfoCase} = require("./echecs");
+const { parentPort } = require('worker_threads');
+const {getPath, action, copyTab, copyObj, echecEtMat, getInfoCase} = require("./echecs");
 
 class IA {
 	iaStarting;
@@ -42,12 +43,7 @@ class IA {
 		console.log(this.taille+" possibilités analysées");
 		console.log("coupures alpha beta =>");
 		console.log(this.nbCoupureAlphaBeta);
-
-		const actionRes = await action({l: resIa.A.l, c: resIa.A.c},{l: resIa.B.l, c: resIa.B.c}, this.player)
-		if (actionRes.coupSpecial !== undefined && resIa.coupSpecialReponse !== undefined) {
-			actionRes.coupSpecial.func(this.player,resIa.coupSpecialReponse);
-		}
-		callbackAction(actionRes.success, actionRes.player, actionRes.coupSpecial);
+		return resIa;
 	}
 
 	async startIa() {
@@ -259,3 +255,15 @@ const scoreObjets = {
 module.exports = {
 	IA
 }
+
+parentPort.on("message", player => {
+	let ia = new IA(player.playerType,player.level, player);
+	setTimeout(() => {
+		ia.applyIa().then(resIa => {
+			parentPort.postMessage(resIa);
+			setTimeout(() => {
+				process.exit(0);
+			}, 50);
+		});
+	}, 100);
+});

@@ -1,9 +1,7 @@
 let http = require('http'),
     url = require('url'),
     fs = require('fs');
-const {playerSearching, players, startGame, remplace, action, setIA, callbackAction, caseNameToCoor, gameOver, startIa} = require("./libs/echecs");
-const { IA } = require("./libs/ia");
-setIA(IA);
+const {playerSearching, players, startGame, remplace, action, callbackAction, caseNameToCoor, gameOver, startIa} = require("./libs/echecs");
 
 /*
 legende :
