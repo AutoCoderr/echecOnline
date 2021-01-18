@@ -23,7 +23,7 @@ class IA {
 		this.debug = debug;
 	}
 
-	async applyIa(profondeurMax = 4) {
+	async applyIa(profondeurMax = 3) {
 		if (!this.player.playing) {
 			return;
 		}
