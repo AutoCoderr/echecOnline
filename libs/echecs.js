@@ -667,7 +667,7 @@ function startGame(J1,J2) {
 	}
 
 	for (let pseudo in players) {
-		if (pseudo != J1.pseudo & pseudo != J2.pseudo) {
+		if (pseudo !== J1.pseudo && pseudo != J2.pseudo && !players[pseudo].isIA) {
 			players[pseudo].socket.emit("displayPlayers", playersList);
 		}
 	}
