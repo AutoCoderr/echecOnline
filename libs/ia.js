@@ -24,7 +24,7 @@ class IA {
 		this.debug = debug;
 	}
 
-	async applyIa(profondeurMax = 3) {
+	async applyIa(profondeurMax = 4) {
 		if (!this.player.playing) {
 			return;
 		}
@@ -95,12 +95,11 @@ class IA {
 						let echecb = copyObj(echec);
 						let infosCaseb = copyObj(infosCase);
 						let scorePlayersb = copyObj(tree.scorePlayers);
-						let datas = await action({l,c},{l: mouvs[i].l,c: mouvs[i].c},{level: echecb,playerType: currentPlayerb,scorePlayers: scorePlayersb,infosCase: infosCaseb, simule: true});
+						let datas = await action({l,c},{l: mouvs[i].l,c: mouvs[i].c},{level: echecb,playerType: currentPlayerb,scorePlayers: scorePlayersb,infosCase: infosCaseb, simule: true, isIA: true});
 
 						let { coupSpecial, success } = datas;
 
 						if (coupSpecial !== undefined) {
-							//this.log("genTree "+profondeur+" n°"+this.treeLevels[profondeur]+" > test case "+l+";"+c+" > test mouv "+i+" > coupSpecial");
 							let reponses = coupSpecial.reponses, func = coupSpecial.func;
 							this.taille += reponses.length;
 							for (let j=0;j<reponses.length;j++) {
@@ -207,13 +206,17 @@ class IA {
 			if (piece != 6) { // ce n'est pas le roi
 				if (scorePlayersbb[1][piece] < scorePlayers[1][piece]) {
 					score -= scoreObjets[piece];
+					if (currentPlayer === 2) score += 1;
 				} else if (scorePlayersbb[1][piece] > scorePlayers[1][piece]) {
 					score += scoreObjets[piece];
+					if (currentPlayer === 1) score += 1;
 				}
 				if (scorePlayersbb[2][piece] < scorePlayers[2][piece]) {
 					score += scoreObjets[piece];
+					if (currentPlayer === 1) score += 1;
 				} else if (scorePlayersbb[2][piece] > scorePlayers[2][piece]) {
 					score -= scoreObjets[piece];
+					if (currentPlayer === 2) score += 1;
 				}
 			}
 		}
@@ -225,7 +228,7 @@ class IA {
 		}
 		if (currentPlayer == 2) {
 			score *= -1;
-		} // Si un roi ou une tour se sont déplacé durant ce coup spécial, et que ce n'est pas un roque, décrémenter le score
+		} // Si un roi ou une tour se sont déplacés durant ce coup spécial, et que ce n'est pas un roque, décrémenter le score
 		if ((coupSpecial == null) || (coupSpecial.name !== "roque" || reponse === "non")) {
 			if ((currentPlayer == 1 & ((echec[7][4] == 61 & echecbb[7][4] != 61) | (echec[7][0] == 31 & echecbb[7][0] != 31 & echec[7][7] == 31 & echecbb[7][7] != 31))) |
 				(currentPlayer == 2 & ((echec[0][4] == 61 & echecbb[0][4] != 61) | (echec[0][0] == 31 & echecbb[0][0] != 31 & echec[0][7] == 31 & echecbb[0][7] != 31)))) {

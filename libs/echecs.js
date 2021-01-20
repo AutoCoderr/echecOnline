@@ -124,48 +124,58 @@ async function action(A,B,player,) {
 		thisInfoCase.nb += 1;
 	}
 	let cD, lD, lI, cI;
-	let listMouv;
+	let listMouv = [];
+	if (player.simule) {
+		listMouv.push({l: lB, c: cB});
+	}
 	switch(Math.floor(echec[A.l][A.c]/10)) {
 		case 1: //pion
-			if (cB > cA) {
-				cD = 1;
-			} else if (cB < cA) {
-				cD = -1;
-			} else {
-				cD = 0;
-			}
-			if (lB > lA) {
-				lD = 1;
-			} else if (lB < lA) {
-				lD = -1;
-			} else {
-				lD = 0;
-			}
-			listMouv = [];
-			lI = lA;
-			cI = cA;
-			while (lI != lB | cI != cB) {
-				lI += lD;
-				cI += cD;
-				listMouv.push({l: lI, c: cI});
+			if (!player.simule) {
+				if (cB > cA) {
+					cD = 1;
+				} else if (cB < cA) {
+					cD = -1;
+				} else {
+					cD = 0;
+				}
+				if (lB > lA) {
+					lD = 1;
+				} else if (lB < lA) {
+					lD = -1;
+				} else {
+					lD = 0;
+				}
+				lI = lA;
+				cI = cA;
+				while (lI != lB | cI != cB) {
+					lI += lD;
+					cI += cD;
+					listMouv.push({l: lI, c: cI});
+				}
 			}
 			await deplace(lA,cA,listMouv,10+currentPlayerb,player);
 			const lP = listMouv[listMouv.length-1].l;
 			const cP = listMouv[listMouv.length-1].c;
-			if (listMouv[0].c != cA &
-				((currentPlayerb == 1 & getElem(echec,lP+1,cP)%10 == 2 & getInfoCase(lP+1,cP,infosCase).isLastDeplacment & getInfoCase(lP+1,cP,infosCase).justTwoDeplacment) |
-					(currentPlayerb == 2 & getElem(echec,lP-1,cP)%10 == 1 & getInfoCase(lP-1,cP,infosCase).isLastDeplacment & getInfoCase(lP-1,cP,infosCase).justTwoDeplacment))) {
-				if (currentPlayerb == 1) {
+			if (listMouv[0].c !== cA &&
+				((currentPlayerb === 1 && getElem(echec,lP+1,cP)%10 === 2 & getInfoCase(lP+1,cP,infosCase).isLastDeplacment & getInfoCase(lP+1,cP,infosCase).justTwoDeplacment) |
+					(currentPlayerb === 2 && getElem(echec,lP-1,cP)%10 === 1 & getInfoCase(lP-1,cP,infosCase).isLastDeplacment & getInfoCase(lP-1,cP,infosCase).justTwoDeplacment))) {
+				if (currentPlayerb === 1) {
 					scorePlayersb[echec[lP+1][cP]%10][Math.floor(echec[lP+1][cP]/10)] -= 1;
 					echec[lP+1][cP] = 0;
 				} else if (currentPlayerb == 2) {
 					scorePlayersb[echec[lP-1][cP]%10][Math.floor(echec[lP-1][cP]/10)] -= 1;
 					echec[lP-1][cP] = 0;
 				}
-				if (!player.isIA)
-					player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
-				if (!player.adversaire.isIA)
-					player.adversaire.socket.emit("displayLevel", {tab: player.level, playerType: player.adversaire.playerType});
+				if (!player.simule) {
+					if (!player.isIA)
+						player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
+
+					if (!player.adversaire.isIA)
+						player.adversaire.socket.emit("displayLevel", {
+							tab: player.level,
+							playerType: player.adversaire.playerType
+						});
+				}
 			}
 			thisInfoCase = getInfoCase(lB,cB,infosCase);
 			thisInfoCase.isLastDeplacment = true;
@@ -195,23 +205,24 @@ async function action(A,B,player,) {
 			}
 			return {success: true,player};
 		case 2: //cavalier
-			listMouv = [];
-			if ((lB-lA)**2 == 1) {
-				if (cB < cA) {
-					listMouv.push({l: lA, c: cA-1});
-				} else {
-					listMouv.push({l: lA, c: cA+1});
+			if (!player.simule) {
+				if ((lB - lA) ** 2 == 1) {
+					if (cB < cA) {
+						listMouv.push({l: lA, c: cA - 1});
+					} else {
+						listMouv.push({l: lA, c: cA + 1});
+					}
+					listMouv.push({l: lA, c: cB});
+					listMouv.push({l: lB, c: cB});
+				} else if ((cB - cA) ** 2 == 1) {
+					if (lB < lA) {
+						listMouv.push({l: lA - 1, c: cA});
+					} else {
+						listMouv.push({l: lA + 1, c: cA});
+					}
+					listMouv.push({l: lB, c: cA})
+					listMouv.push({l: lB, c: cB});
 				}
-				listMouv.push({l: lA, c: cB});
-				listMouv.push({l: lB, c: cB});
-			} else if ((cB-cA)**2 == 1) {
-				if (lB < lA) {
-					listMouv.push({l: lA-1, c: cA});
-				} else {
-					listMouv.push({l: lA+1, c: cA});
-				}
-				listMouv.push({l: lB, c: cA})
-				listMouv.push({l: lB, c: cB});
 			}
 			await deplace(lA,cA,listMouv,20+currentPlayerb,player);
 			thisInfoCase = getInfoCase(lB,cB,infosCase);
@@ -223,28 +234,29 @@ async function action(A,B,player,) {
 			}
 			return {success: true, player};
 		case 3: //tour
-			if (cB != cA) {
-				lD = 0;
-				if (cB > cA) {
-					cD = 1;
-				} else {
-					cD = -1;
+			if (!player.simule) {
+				if (cB != cA) {
+					lD = 0;
+					if (cB > cA) {
+						cD = 1;
+					} else {
+						cD = -1;
+					}
+				} else if (lB != lA) {
+					cD = 0;
+					if (lB > lA) {
+						lD = 1;
+					} else {
+						lD = -1;
+					}
 				}
-			} else if (lB != lA) {
-				cD = 0;
-				if (lB > lA) {
-					lD = 1;
-				} else {
-					lD = -1;
+				lI = lA;
+				cI = cA;
+				while (lI != lB | cI != cB) {
+					lI += lD;
+					cI += cD;
+					listMouv.push({l: lI, c: cI});
 				}
-			}
-			listMouv = [];
-			lI = lA;
-			cI = cA;
-			while (lI != lB | cI != cB) {
-				lI += lD;
-				cI += cD;
-				listMouv.push({l: lI, c: cI});
 			}
 			await deplace(lA,cA,listMouv,30+currentPlayerb,player);
 			thisInfoCase = getInfoCase(lB,cB,infosCase);
@@ -256,25 +268,26 @@ async function action(A,B,player,) {
 			}
 			return {success: true,player};
 		case 4: // fou
-			lD = 0;
-			cD = 0;
-			if (lB > lA) {
-				lD = 1;
-			} else if (lB < lA) {
-				lD = -1;
-			}
-			if (cB > cA) {
-				cD = 1
-			} else if (cB < cA) {
-				cD = -1;
-			}
-			listMouv = [];
-			lI = lA;
-			cI = cA;
-			while (lI != lB | cI != cB) {
-				lI += lD;
-				cI += cD;
-				listMouv.push({l: lI, c: cI});
+			if (!player.simule) {
+				lD = 0;
+				cD = 0;
+				if (lB > lA) {
+					lD = 1;
+				} else if (lB < lA) {
+					lD = -1;
+				}
+				if (cB > cA) {
+					cD = 1
+				} else if (cB < cA) {
+					cD = -1;
+				}
+				lI = lA;
+				cI = cA;
+				while (lI != lB | cI != cB) {
+					lI += lD;
+					cI += cD;
+					listMouv.push({l: lI, c: cI});
+				}
 			}
 			await deplace(lA,cA,listMouv,40+currentPlayerb,player);
 			thisInfoCase = getInfoCase(lB,cB,infosCase);
@@ -286,25 +299,26 @@ async function action(A,B,player,) {
 			}
 			return {success: true,player};
 		case 5: // reine
-			lD = 0;
-			cD = 0;
-			if (lB > lA) {
-				lD = 1;
-			} else if (lB < lA) {
-				lD = -1;
-			}
-			if (cB > cA) {
-				cD = 1
-			} else if (cB < cA) {
-				cD = -1;
-			}
-			listMouv = [];
-			lI = lA;
-			cI = cA;
-			while (lI != lB | cI != cB) {
-				lI += lD;
-				cI += cD;
-				listMouv.push({l: lI, c: cI});
+			if (!player.simule) {
+				lD = 0;
+				cD = 0;
+				if (lB > lA) {
+					lD = 1;
+				} else if (lB < lA) {
+					lD = -1;
+				}
+				if (cB > cA) {
+					cD = 1
+				} else if (cB < cA) {
+					cD = -1;
+				}
+				lI = lA;
+				cI = cA;
+				while (lI != lB | cI != cB) {
+					lI += lD;
+					cI += cD;
+					listMouv.push({l: lI, c: cI});
+				}
 			}
 			await deplace(lA,cA,listMouv,50+currentPlayerb,player);
 			thisInfoCase = getInfoCase(lB,cB,infosCase);
@@ -316,7 +330,8 @@ async function action(A,B,player,) {
 			}
 			return {success: true,player};
 		case 6: // roi
-			listMouv = [{l: lB, c: cB}];
+			if (!player.simule)
+				listMouv = [{l: lB, c: cB}];
 			await deplace(lA,cA,listMouv,60+currentPlayerb, player);
 			thisInfoCase = getInfoCase(lB,cB,infosCase);
 			thisInfoCase.isLastDeplacment = true;
@@ -354,7 +369,7 @@ function timeoutAwait(ms) {
 	})
 }
 
-async function deplace(lP,cP,listMouv,type, player, ms = 500) {
+async function deplace(lA,cA,listMouv,type, player, ms = 500) {
 	let echec = player.level;
 	let scorePlayersb = player.scorePlayers;
 	let currentPlayerb = player.currentPlayer;
@@ -362,29 +377,29 @@ async function deplace(lP,cP,listMouv,type, player, ms = 500) {
 
 	for (let i=0;i<listMouv.length;i++) {
 		if (echec[listMouv[i].l][listMouv[i].c] != 0) {
-			if (Math.floor(type/10) == 1 & listMouv[i].c == cP) {
+			if (Math.floor(type/10) == 1 & listMouv[i].c == cA) {
 				//return {echec: echecb, scorePlayers: scorePlayersb, infosCase: infosCaseb};
 				return;
 			} else if (Math.floor(type/10) != 2 | i == listMouv.length-1) {
-				if (echec[listMouv[i].l][listMouv[i].c]%10 != currentPlayerb & echec[listMouv[i].l][listMouv[i].c] != 0) {
+				if (echec[listMouv[i].l][listMouv[i].c]%10 != currentPlayerb) {
 					scorePlayersb[echec[listMouv[i].l][listMouv[i].c]%10][Math.floor(echec[listMouv[i].l][listMouv[i].c]/10)] -= 1;
-					let thisInfoCase = getInfoCase(lP,cP,infosCase);
+					let thisInfoCase = getInfoCase(lA,cA,infosCase);
 					thisInfoCase.l = listMouv[i].l;
 					thisInfoCase.c = listMouv[i].c;
-					echec[lP][cP] = 0;
+					echec[lA][cA] = 0;
 					echec[listMouv[i].l][listMouv[i].c] = type;
 					//return {echec: echecb, scorePlayers: scorePlayersb, infosCase: infosCaseb};
 				}
 				return;
 			}
 		} else {
-			echec[lP][cP] = 0;
+			echec[lA][cA] = 0;
 			echec[listMouv[i].l][listMouv[i].c] = type;
-			let thisInfoCase = getInfoCase(lP,cP,infosCase);
+			let thisInfoCase = getInfoCase(lA,cA,infosCase);
 			thisInfoCase.l = listMouv[i].l;
 			thisInfoCase.c = listMouv[i].c;
-			lP = listMouv[i].l;
-			cP = listMouv[i].c;
+			lA = listMouv[i].l;
+			cA = listMouv[i].c;
 			if (!player.simule) {
 				if (!player.isIA)
 					player.socket.emit("displayLevel", {tab: player.level, playerType: player.playerType});
@@ -467,7 +482,8 @@ function possibleMouvement(lA,cA,lB,cB,echec,currentPlayerb,infosCase) {
 								lB === lA-2 &&
 								(
 									getInfoCase(lA,cA,infosCase).nb > 0 ||
-									cB-cA !== 0
+									cB-cA !== 0 ||
+									getElem(echec, lA-1,cB) !== 0
 								)
 							)
 							||
@@ -512,7 +528,8 @@ function possibleMouvement(lA,cA,lB,cB,echec,currentPlayerb,infosCase) {
 								lB === lA+2 &&
 								(
 									getInfoCase(lA,cA,infosCase).nb > 0 ||
-									cB-cA !== 0
+									cB-cA !== 0 ||
+									getElem(echec, lA+1,cB) !== 0
 								)
 							)
 							||
@@ -1139,7 +1156,7 @@ function getElem(echec,l,c) {
 	if (typeof(echec[l][c]) == "undefined") {
 		return 0;
 	}
-	return echec;
+	return echec[l][c];
 }
 
 function remplace(str, A, B) {

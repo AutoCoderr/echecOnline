@@ -64,7 +64,7 @@
 
     let choicedCases = [];
 
-    const socket = io();
+    const socket = io({transports: ['websocket'], upgrade: false});
 
 
     function sendPseudo() {
@@ -169,7 +169,6 @@
         }
 
         let str = "<table>";
-        //if (datas.playerType == 1) {
         if (datas.playerType === 1) {
             str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
         } else {
