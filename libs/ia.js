@@ -55,13 +55,15 @@ class IA {
 		const diff = (new Date()).getTime() - oldTime.getTime();
 		console.log("Passed time : "+diff+" ms");
 
-		let max = this.tree.branchs[0];
+		let maxs = [this.tree.branchs[0]];
 		for (let i=1;i<this.tree.branchs.length;i++) {
-			if (this.tree.branchs[i].score >= max.score ||
-				(this.tree.branchs[i].score === max.score && Math.random() < 1/2)) {
-				max = this.tree.branchs[i];
+			if (this.tree.branchs[i].score === maxs[maxs.length-1].score) {
+				maxs.push(this.tree.branchs[i]);
+			} else if (this.tree.branchs[i].score > maxs[0].score) {
+				maxs = [this.tree.branchs[i]]
 			}
 		}
+		const max = maxs[rand(0,maxs.length-1)];
 		return {A: {l: max.lA, c: max.cA}, B: {l: max.lB, c: max.cB}, coupSpecialReponse: max.coupSpecialReponse};
 	}
 
@@ -246,6 +248,10 @@ class IA {
 		}
 		return score;
 	}
+}
+
+function rand(a,b) {
+	return a+Math.floor(Math.random()*(b-a+1));
 }
 
 const scoreObjets = {
