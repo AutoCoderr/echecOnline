@@ -346,7 +346,6 @@ async function action(A,B,player,) {
 				} else if (cB < cA) {
 					cD = -1;
 				}
-				cD = cB-cA;
 
 				lI = lA;
 				cI = cA;
@@ -643,6 +642,30 @@ function possibleMouvement(lA,cA,lB,cB,echec,currentPlayerb,infosCase) {
 				const kingInfoCase = getInfoCase(lA,cA,infosCase);
 				if ((cB-cA)**2 > 1 && (towerInfoCase.nb > 0 || kingInfoCase.nb > 0)) {
 					return false;
+				}
+				let lD = 0;
+				if (lB > lA) {
+					lD = 1;
+				} else if (lB < lA){
+					lD = -1;
+				}
+
+				let cD = 0;
+				if (cB > cA) {
+					cD = 1
+				} else if (cB < cA) {
+					cD = -1;
+				}
+
+				let lI = lA;
+				let cI = cA;
+
+				while(lI !== lB || cI !== cB) {
+					lI += lD;
+					cI += cD;
+					if (echec[lI][cI] !== 0) {
+						return false;
+					}
 				}
 			} else if ((lB-lA)**2 > 1 || diffC > 1) {
 				return false;
