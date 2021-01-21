@@ -255,12 +255,12 @@
     socket.on("endGame", function(datas) {
         let str = "Partie terminé!<br/>";
         if (typeof(datas.winner) == "undefined") {
-            str += "Match nul";
+            str += "<span style='color: #77f;'>Match nul!</span>";
         } else {
             if (datas.winner == datas.playerType) {
-                str += "<font color='green'>Vous avez gagné!</font>";
+                str += "<span style='color: green;'>Vous avez gagné!</span>";
             } else {
-                str += "<font color='red'>Vous avez perdu!</font>";
+                str += "<span style='color: red;'>Vous avez perdu!</span>";
             }
         }
 

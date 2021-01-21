@@ -69,7 +69,9 @@ async function callbackAction(success,player,coupSpecial) {
 			lastDeplacment: player.lastDeplacment
 		});
 	}
-	if (!player.adversaire.isIA) {
+	if (isPat(player.adversaire.playerType,player.adversaire.infosCase,player.level)) {
+		gameOver(player.adversaire);
+	} else if (!player.adversaire.isIA) {
 		player.adversaire.socket.emit("displayLevel", {
 			tab: player.level,
 			playerType: player.adversaire.playerType,
@@ -910,22 +912,6 @@ function roque(lR,cR,lT,cT,player,rep) {
 	}
 }
 
-function isEchec(currentPlayer,echec) {
-	for (let l=0;l<echec.length;l++) {
-		for (let c=0;c<echec[l].length;c++) {
-			if (echec[l][c]%10 != currentPlayer & echec[l][c] != 0) {
-				let mouvs = getPath(l,c,echec);
-				for (let i=0;i<mouvs.length;i++) {
-					if (echec[mouvs[i].l][mouvs[i].c] == 60+currentPlayer) {
-						return true;
-					}
-				}
-			}
-		}
-	}
-	return false;
-}
-
 function getPath(l,c,echec) {
 	if (echec[l][c] == 0) {
 		return [];
@@ -1147,6 +1133,36 @@ function getPath(l,c,echec) {
 			break;
 	}
 	return mouvs;
+}
+
+function isEchec(currentPlayer,echec) {
+	for (let l=0;l<echec.length;l++) {
+		for (let c=0;c<echec[l].length;c++) {
+			if (echec[l][c]%10 != currentPlayer & echec[l][c] != 0) {
+				let mouvs = getPath(l,c,echec);
+				for (let i=0;i<mouvs.length;i++) {
+					if (echec[mouvs[i].l][mouvs[i].c] == 60+currentPlayer) {
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
+
+function isPat(currentPlayer,infosCase,echec) {
+	for (let l=0;l<echec.length;l++) {
+		for (let c=0;c<echec[l].length;c++) {
+			if (echec[l][c]%10 == currentPlayer) {
+				let mouvs = getPath(l, c, echec);
+				for (let mouv of mouvs) {
+					if (possibleMouvement(l, c, mouv.l, mouv.c, echec, currentPlayer, infosCase)) return false;
+				}
+			}
+		}
+	}
+	return true;
 }
 
 async function echecEtMat(player) {
