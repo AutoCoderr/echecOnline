@@ -330,8 +330,31 @@ async function action(A,B,player,) {
 			}
 			return {success: true,player};
 		case 6: // roi
-			if (!player.simule)
-				listMouv = [{l: lB, c: cB}];
+			if (!player.simule) {
+				lD = 0;
+				if (lB > lA) {
+					lD = 1;
+				} else if (lB < lA){
+					lD = -1;
+				}
+
+				cD = 0;
+				if (cB > cA) {
+					cD = 1
+				} else if (cB < cA) {
+					cD = -1;
+				}
+				cD = cB-cA;
+
+				lI = lA;
+				cI = cA;
+
+				while (lI !== lB || cI !== cB) {
+					lI += lD;
+					cI += cD;
+					listMouv.push({l: lI, c: cI});
+				}
+			}
 			await deplace(lA,cA,listMouv,60+currentPlayerb, player);
 			thisInfoCase = getInfoCase(lB,cB,infosCase);
 			thisInfoCase.isLastDeplacment = true;
@@ -343,7 +366,7 @@ async function action(A,B,player,) {
 			if (echec[lB][cB+1] === 30+currentPlayerb || echec[lB][cB-1] === 30+currentPlayerb) {
 				const cT = echec[lB][cB+1] === 30+currentPlayerb ? cB+1 : cB-1;
 				const towerInfoCase = getInfoCase(lB,cT,infosCase);
-				if (towerInfoCase != null && towerInfoCase.nb === 0) {
+				if (towerInfoCase != null && towerInfoCase.nb === 0 && thisInfoCase.nb === 1) {
 					return {
 						success: true,
 						player,
@@ -612,7 +635,14 @@ function possibleMouvement(lA,cA,lB,cB,echec,currentPlayerb,infosCase) {
 			if (echec[lB][cB]%10 == currentPlayerb) {
 				return false;
 			}
-			if ((lB-lA)**2 > 1 | (cB-cA)**2 > 1) {
+			let diffC = Math.sqrt((cB-cA)**2);
+			if (echec[lB][cB+1] === 30+currentPlayerb || echec[lB][cB-1] === 30+currentPlayerb) {
+				const towerInfoCase = getInfoCase(lB,echec[lB][cB+1] === 30+currentPlayerb ? cB+1 : cB-1,infosCase);
+				const kingInfoCase = getInfoCase(lA,cA,infosCase);
+				if ((cB-cA)**2 > 1 && (towerInfoCase.nb > 0 || kingInfoCase.nb > 0)) {
+					return false;
+				}
+			} else if ((lB-lA)**2 > 1 || diffC > 1) {
 				return false;
 			}
 			break;
@@ -1107,6 +1137,11 @@ function getPath(l,c,echec) {
 					if (echec[lB][cB]%10 != currentPlayer) {
 						mouvs.push({l: lB, c: cB});
 					}
+				}
+			}
+			for (let cI=0;cI<8;cI++) {
+				if (echec[l][cI] === 30+currentPlayer) {
+					mouvs.push(c < cI ? {l, c: cI-1} : {l, c: cI+1});
 				}
 			}
 			break;

@@ -91,7 +91,7 @@ io.sockets.on('connection', function (socket) {
         pseudo = pseudo+n;
         players[pseudo] = {pseudo: pseudo, level: null, adversaire: null, playerType: null,
             socket: socket, demmanded: "", playing: false, hisOwnTurn: null,
-            voteToRestart: null, infosCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false, isIA: false};
+            voteToRestart: null, infosCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false, isIA: false, simule: false};
         socket.datas = players[pseudo];
         console.log("new connected! : "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
         socket.emit("newPseudo", pseudo)
