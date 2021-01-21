@@ -51,7 +51,7 @@ class IA {
 		this.tree = {echec: copyTab(this.echec), infosCase: copyObj(this.player.infosCase), scorePlayers: copyObj(this.player.scorePlayers), profondeur: 0};
 		const oldTime = new Date();
 		console.log("profondeurMax => "+this.profondeurMax);
-		await this.genTree(this.tree);
+		const score = await this.genTree(this.tree);
 		const diff = (new Date()).getTime() - oldTime.getTime();
 		console.log("Passed time : "+diff+" ms");
 
@@ -62,7 +62,6 @@ class IA {
 				max = this.tree.branchs[i];
 			}
 		}
-
 		return {A: {l: max.lA, c: max.cA}, B: {l: max.lB, c: max.cB}, coupSpecialReponse: max.coupSpecialReponse};
 	}
 
@@ -73,11 +72,11 @@ class IA {
 			this.treeLevels[profondeur] += 1;
 		}
 		if (profondeur >= this.profondeurMax) {
-			return true;
+			return tree.score;
 		}
 		if (await echecEtMat({level: tree.echec, playerType: 1, scorePlayers: tree.scorePlayers, infosCase: tree.infosCase, simule: true}) ||
 			await echecEtMat({level: tree.echec, playerType: 2, scorePlayers: tree.scorePlayers, infosCase: tree.infosCase, simule: true})) {
-			return true;
+			return tree.score;
 		}
 		let coupureAlphaBeta = false;
 		let toGet = null
@@ -130,7 +129,7 @@ class IA {
 									parent: tree,
 									nbNode: tree.branchs.length
 								});
-								await this.genTree(tree.branchs[tree.branchs.length-1],profondeur+1,(currentPlayerb === 1 ? 2 : 1));
+								score = await this.genTree(tree.branchs[tree.branchs.length-1],profondeur+1,(currentPlayerb === 1 ? 2 : 1));
 								if ((profondeur%2 === 1 & score < toGet) || // applique l'algo mini max
 									(profondeur%2 === 0 & score > toGet) ||
 									toGet == null) {
@@ -152,7 +151,7 @@ class IA {
 
 								tree.branchs.push({lA: l, cA: c, lB: mouvs[i].l, cB: mouvs[i].c, echec: echecb, infosCase: infosCaseb,
 									scorePlayers: scorePlayersb, score: score, profondeur: profondeur+1, parent: tree, coupSpecial: null, nbNode: tree.branchs.length});
-								await this.genTree(tree.branchs[tree.branchs.length-1],profondeur+1,(currentPlayerb == 1 ? 2 : 1));
+								score = await this.genTree(tree.branchs[tree.branchs.length-1],profondeur+1,(currentPlayerb == 1 ? 2 : 1));
 								if ((profondeur%2 == 1 & score < toGet) | // applique l'algo mini max
 									(profondeur%2 == 0 & score > toGet) |
 									toGet == null) {
@@ -176,8 +175,10 @@ class IA {
 				break;
 			}
 		}
-		tree.score = toGet;
-		return true;
+		if (toGet != null) {
+			tree.score = toGet;
+		}
+		return tree.score;
 	}
 
 	alphaBeta(tree, score, coupureAlphaBeta) {
