@@ -64,12 +64,15 @@
 
     let choicedCases = [];
 
-    const socket = io({transports: ['websocket'], upgrade: false});
+    let socket = io({transports: ['websocket'], upgrade: false});
 
+    listenOnSocket(socket);
 
     function sendPseudo() {
-        pseudo = document.getElementById("pseudo").value;
-        if (pseudo == "") {
+        if (pseudo === "") {
+            pseudo = document.getElementById("pseudo").value;
+        }
+        if (pseudo === "") {
             pseudo = "user"+Math.round(Math.random()*10**5);
         }
 
@@ -111,231 +114,246 @@
         socket.emit("restart");
     }
 
-    socket.on("emptyChoicedCases", function() {
-        choicedCases = [];
-    })
+    function listenOnSocket(socket) {
 
-    socket.on("newPseudo", function(newPseudo) {
-        pseudo = newPseudo;
-    });
+        socket.on("emptyChoicedCases", function () {
+            choicedCases = [];
+        })
 
-    socket.on("demmand", function(pseudo) {
-        if (playing) { return; }
-        let str = "<br/>"+pseudo+" souhaite jouer avec vous.";
-        str += "<br/><button class='btn btn-primary' type='button' onclick='acceptDemmand(`"+pseudo+"`)'>Accepter</button>";
-        document.getElementById("demmand").innerHTML = str;
-    });
+        socket.on("newPseudo", function (newPseudo) {
+            pseudo = newPseudo;
+        });
 
-    socket.on("displayPlayers", function(players) {
-        if (pseudo == "" | playing | searchingForPlayer) {
-            return;
-        }
-        document.getElementById("loginForm").style.display = "none";
-        let str =  "<br/><br/><div class='btn-group'><button class='btn btn-primary btn-lg' onclick='searchPlayer()'>Chercher Joueur</button></div>"+
-                   "<br/><br/><h1>Utilisateurs connectés :</h1><br/><table>";
-        for (let i=0;i<players.length;i++) {
-            if (players[i] != pseudo) {
-                str += "<tr><td>"+players[i]+"</td><td>&nbsp;<button class='btn btn-primary' type='button' onclick='sendDemmand(`"+players[i]+"`)'>Inviter</button></td></tr>";
+        socket.on("demmand", function (pseudo) {
+            if (playing) {
+                return;
             }
-        }
-        if (players.length == 1) {
-            str += "<tr><td>Il n'y a personne d'autre</td></tr>";
-        }
-        str += "</table>";
-        document.getElementById("list").innerHTML = str;
-        document.getElementById("play_against_id_button").style.display = "block";
-    });
+            let str = "<br/>" + pseudo + " souhaite jouer avec vous.";
+            str += "<br/><button class='btn btn-primary' type='button' onclick='acceptDemmand(`" + pseudo + "`)'>Accepter</button>";
+            document.getElementById("demmand").innerHTML = str;
+        });
 
-    socket.on("displayLevel", function (datas) {
-        choicedCases = [];
-        let echec = datas.tab;
-        searchingForPlayer = false;
-        if (!playing) {
-            playing = true;
-            document.getElementById("list").innerHTML = "";
-            document.getElementById("play_against_id_button").style.display = "none";
-        }
-        document.getElementById("demmand").innerHTML = "";
-
-        let lA = 8;
-        let cA = 8;
-        let lB = 8;
-        let cB = 8;
-        if (typeof(datas.lastDeplacment) != "undefined") {
-            lA = datas.lastDeplacment.lA;
-            cA = datas.lastDeplacment.cA;
-            lB = datas.lastDeplacment.lB;
-            cB = datas.lastDeplacment.cB;
-        }
-
-        let str = "<table>";
-        if (datas.playerType === 1) {
-            str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
-        } else {
-            str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
-        }
-        for (let l = datas.playerType === 1 ? 0 : echec.length-1;
-             (datas.playerType === 1 && l<echec.length) || (datas.playerType === 2 && l>=0);
-             l += datas.playerType === 1 ? 1 : -1) {
-            str += "<tr>";
-            str += "<td>"+(8-l)+"</td>";
-            for (let c = datas.playerType === 1 ? 0 : echec[l].length-1;
-                 (datas.playerType === 1 && c<echec[l].length) || (datas.playerType === 2 && c >=0);
-                 c += datas.playerType === 1 ? 1 : -1) {
-                let classCSS = "cell"+echec[l][c];
-                if ((l+1)%2 == (c+1)%2) {
-                    classCSS += "b"
-                } else {
-                    classCSS += "m";
-                }
-                if ((l == lA & c == cA) | (l == lB & c == cB)) {
-                    classCSS += " entoured";
-                }
-                str += "<td id='"+l+"-"+c+"' class='cell "+classCSS+"'></td>";
+        socket.on("displayPlayers", function (players) {
+            if (pseudo == "" | playing | searchingForPlayer) {
+                return;
             }
-            str += "<td>"+(8-l)+"</td>";
-            str += "</tr>";
-        }
-        if (datas.playerType == 1) {
-            str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
-        } else {
-            str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
-        }
-        str += "</table>";
-        document.getElementById("echec").innerHTML = str;
-        document.getElementById("buttons").innerHTML = "<button class='btn btn-danger' type='button' onclick='demandSurrend()'>Abandonner</button>";
+            document.getElementById("loginForm").style.display = "none";
+            let str = "<br/><br/><div class='btn-group'><button class='btn btn-primary btn-lg' onclick='searchPlayer()'>Chercher Joueur</button></div>" +
+                "<br/><br/><h1>Utilisateurs connectés :</h1><br/><table>";
+            for (let i = 0; i < players.length; i++) {
+                if (players[i] != pseudo) {
+                    str += "<tr><td>" + players[i] + "</td><td>&nbsp;<button class='btn btn-primary' type='button' onclick='sendDemmand(`" + players[i] + "`)'>Inviter</button></td></tr>";
+                }
+            }
+            if (players.length == 1) {
+                str += "<tr><td>Il n'y a personne d'autre</td></tr>";
+            }
+            str += "</table>";
+            document.getElementById("list").innerHTML = str;
+            document.getElementById("play_against_id_button").style.display = "block";
+        });
 
-        if (typeof(datas.hisOwnTurn) != "undefined") {
-            if (datas.hisOwnTurn) {
-                for (let l=0;l<8;l++) {
-                    for (let c=0;c<8;c++) {
-                        document.getElementById(l+"-"+c).onclick = function () {
-                            let caseName = numToLetter[c]+(8-l);
-                            if (choicedCases.length == 2) {
-                                return;
-                            }
-                            choicedCases.push(caseName);
-                            if (choicedCases.length == 2) {
-                                document.getElementById("cases").innerHTML = document.getElementById("cases").innerHTML+" en "
-                            }
-                            document.getElementById("cases").innerHTML = document.getElementById("cases").innerHTML+"<span class='afficheCase'>"+caseName+"</span>";
-                            if (choicedCases.length == 2) {
-                                setTimeout(() => {
-                                    document.getElementById("cases").innerHTML = "";
-                                    valid();
-                                }, 100);
+        socket.on("displayLevel", function (datas) {
+            choicedCases = [];
+            let echec = datas.tab;
+            searchingForPlayer = false;
+            if (!playing) {
+                playing = true;
+                document.getElementById("list").innerHTML = "";
+                document.getElementById("play_against_id_button").style.display = "none";
+            }
+            document.getElementById("demmand").innerHTML = "";
+
+            let lA = 8;
+            let cA = 8;
+            let lB = 8;
+            let cB = 8;
+            if (typeof (datas.lastDeplacment) != "undefined") {
+                lA = datas.lastDeplacment.lA;
+                cA = datas.lastDeplacment.cA;
+                lB = datas.lastDeplacment.lB;
+                cB = datas.lastDeplacment.cB;
+            }
+
+            let str = "<table>";
+            if (datas.playerType === 1) {
+                str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
+            } else {
+                str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
+            }
+            for (let l = datas.playerType === 1 ? 0 : echec.length - 1;
+                 (datas.playerType === 1 && l < echec.length) || (datas.playerType === 2 && l >= 0);
+                 l += datas.playerType === 1 ? 1 : -1) {
+                str += "<tr>";
+                str += "<td>" + (8 - l) + "</td>";
+                for (let c = datas.playerType === 1 ? 0 : echec[l].length - 1;
+                     (datas.playerType === 1 && c < echec[l].length) || (datas.playerType === 2 && c >= 0);
+                     c += datas.playerType === 1 ? 1 : -1) {
+                    let classCSS = "cell" + echec[l][c];
+                    if ((l + 1) % 2 == (c + 1) % 2) {
+                        classCSS += "b"
+                    } else {
+                        classCSS += "m";
+                    }
+                    if ((l == lA & c == cA) | (l == lB & c == cB)) {
+                        classCSS += " entoured";
+                    }
+                    str += "<td id='" + l + "-" + c + "' class='cell " + classCSS + "'></td>";
+                }
+                str += "<td>" + (8 - l) + "</td>";
+                str += "</tr>";
+            }
+            if (datas.playerType == 1) {
+                str += "<tr class='alignCenter'><td></td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td></tr>";
+            } else {
+                str += "<tr class='alignCenter'><td></td><td>H</td><td>G</td><td>F</td><td>E</td><td>D</td><td>C</td><td>B</td><td>A</td></tr>";
+            }
+            str += "</table>";
+            document.getElementById("echec").innerHTML = str;
+            document.getElementById("buttons").innerHTML = "<button class='btn btn-danger' type='button' onclick='demandSurrend()'>Abandonner</button>";
+
+            if (typeof (datas.hisOwnTurn) != "undefined") {
+                if (datas.hisOwnTurn) {
+                    for (let l = 0; l < 8; l++) {
+                        for (let c = 0; c < 8; c++) {
+                            document.getElementById(l + "-" + c).onclick = function () {
+                                let caseName = numToLetter[c] + (8 - l);
+                                if (choicedCases.length == 2) {
+                                    return;
+                                }
+                                choicedCases.push(caseName);
+                                if (choicedCases.length == 2) {
+                                    document.getElementById("cases").innerHTML = document.getElementById("cases").innerHTML + " en "
+                                }
+                                document.getElementById("cases").innerHTML = document.getElementById("cases").innerHTML + "<span class='afficheCase'>" + caseName + "</span>";
+                                if (choicedCases.length == 2) {
+                                    setTimeout(() => {
+                                        document.getElementById("cases").innerHTML = "";
+                                        valid();
+                                    }, 100);
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        if (datas.echec) {
-            document.getElementById("msg").innerHTML = "<font color='red'>Vous êtes en echec</font>";
-        } else {
-            document.getElementById("msg").innerHTML = "";
-        }
-
-        document.getElementById("whoPlayer").innerHTML = "Vous êtes le joueur <font style='background-color: #999;' "+
-        "color='"+(datas.playerType == 1 ? "red" : "green")+"' size='4'>"+datas.playerType+"</font>";
-
-        if (typeof(datas.hisOwnTurn) != "undefined") {
-            if (datas.hisOwnTurn) {
-                document.getElementById("playerOfTurn").innerHTML = "C'est a vous.";
+            if (datas.echec) {
+                document.getElementById("msg").innerHTML = "<font color='red'>Vous êtes en echec</font>";
             } else {
-                document.getElementById("playerOfTurn").innerHTML = "C'est au joueur <font style='background-color: #999;' "+
-                "color='"+(datas.playerType == 1 ? "green" : "red")+"' size='4'>"+(datas.playerType == 1 ? 2 : 1)+"</font>";
+                document.getElementById("msg").innerHTML = "";
             }
-        } else {
-            document.getElementById("playerOfTurn").innerHTML = "&nbsp;";
-        }
-    });
 
-    socket.on("endGame", function(datas) {
-        let str = "Partie terminé!<br/>";
-        if (typeof(datas.winner) == "undefined") {
-            str += "<span style='color: #77f;'>Match nul!</span>";
-        } else {
-            if (datas.winner == datas.playerType) {
-                str += "<span style='color: green;'>Vous avez gagné!</span>";
+            document.getElementById("whoPlayer").innerHTML = "Vous êtes le joueur <font style='background-color: #999;' " +
+                "color='" + (datas.playerType == 1 ? "red" : "green") + "' size='4'>" + datas.playerType + "</font>";
+
+            if (typeof (datas.hisOwnTurn) != "undefined") {
+                if (datas.hisOwnTurn) {
+                    document.getElementById("playerOfTurn").innerHTML = "C'est a vous.";
+                } else {
+                    document.getElementById("playerOfTurn").innerHTML = "C'est au joueur <font style='background-color: #999;' " +
+                        "color='" + (datas.playerType == 1 ? "green" : "red") + "' size='4'>" + (datas.playerType == 1 ? 2 : 1) + "</font>";
+                }
             } else {
-                str += "<span style='color: red;'>Vous avez perdu!</span>";
+                document.getElementById("playerOfTurn").innerHTML = "&nbsp;";
             }
-        }
+        });
 
-        str += "<br/><button class='btn btn-danger' type='button' onclick='quitParty()'>Menu Principal</button>";
+        socket.on("endGame", function (datas) {
+            let str = "Partie terminé!<br/>";
+            if (typeof (datas.winner) == "undefined") {
+                str += "<span style='color: #77f;'>Match nul!</span>";
+            } else {
+                if (datas.winner == datas.playerType) {
+                    str += "<span style='color: green;'>Vous avez gagné!</span>";
+                } else {
+                    str += "<span style='color: red;'>Vous avez perdu!</span>";
+                }
+            }
 
-        str += "<button class='btn btn-danger' type='button' onclick='restart()'>Rejouer</button> "+(!datas.opponentIsIA ? "(<span id='voteToRestart'>0</span> vote sur 2)" : "");
-        document.getElementById("msg").innerHTML = str;
+            str += "<br/><button class='btn btn-danger' type='button' onclick='quitParty()'>Menu Principal</button>";
 
-        document.getElementById("buttons").innerHTML = "";
-    });
+            str += "<button class='btn btn-danger' type='button' onclick='restart()'>Rejouer</button> " + (!datas.opponentIsIA ? "(<span id='voteToRestart'>0</span> vote sur 2)" : "");
+            document.getElementById("msg").innerHTML = str;
 
-    socket.on("voteToRestart", function (nb) {
-        document.getElementById("voteToRestart").innerHTML = nb;
-    });
+            document.getElementById("buttons").innerHTML = "";
+        });
 
-    socket.on("msg", function(msg) {
-        let color;
-        if (msg.type == "error") {
-            color = "red";
-        } else if (msg.type == "info") {
-            color = "#008DC0";
-        }
-        if (msg.type != "empty") {
-            document.getElementById("msg").innerHTML = "<font color='"+color+"'>"+msg.msg+"</font>";
-        } else {
+        socket.on("voteToRestart", function (nb) {
+            document.getElementById("voteToRestart").innerHTML = nb;
+        });
+
+        socket.on("msg", function (msg) {
+            let color;
+            if (msg.type == "error") {
+                color = "red";
+            } else if (msg.type == "info") {
+                color = "#008DC0";
+            }
+            if (msg.type != "empty") {
+                document.getElementById("msg").innerHTML = "<font color='" + color + "'>" + msg.msg + "</font>";
+            } else {
+                document.getElementById("msg").innerHTML = "";
+            }
+        });
+
+        socket.on("quitParty", function () {
+            playing = false;
+            document.getElementById("echec").innerHTML = "";
             document.getElementById("msg").innerHTML = "";
-        }
-    });
+            document.getElementById("whoPlayer").innerHTML = "";
+            document.getElementById("playerOfTurn").innerHTML = "";
+            document.getElementById("buttons").innerHTML = "";
 
-    socket.on("quitParty", function() {
-        playing = false;
-        document.getElementById("echec").innerHTML = "";
-        document.getElementById("msg").innerHTML = "";
-        document.getElementById("whoPlayer").innerHTML = "";
-        document.getElementById("playerOfTurn").innerHTML = "";
-        document.getElementById("buttons").innerHTML = "";
+            socket.emit("displayPlayers");
+        });
 
-        socket.emit("displayPlayers");
-    });
+        socket.on("coupSpecial", function (obj) {
+            if (typeof (obj) != "object") {
+                return;
+            }
+            if (!Array.isArray(obj.reponses)) {
+                return;
+            }
+            if (typeof (obj.msg) != "string") {
+                return;
+            }
 
-    socket.on("coupSpecial", function(obj) {
-        if (typeof(obj) != "object") {
-            return;
-        }
-        if (!Array.isArray(obj.reponses)) {
-            return;
-        }
-        if (typeof(obj.msg) != "string") {
-            return;
-        }
+            let selectReponse = "<select id='rep'>";
+            for (let i = 0; i < obj.reponses.length; i++) {
+                selectReponse += "<option value='" + obj.reponses[i] + "'>" + obj.reponses[i] + "</option>";
+            }
+            selectReponse += "</select>";
 
-        let selectReponse = "<select id='rep'>";
-        for (let i=0;i<obj.reponses.length;i++) {
-            selectReponse += "<option value='"+obj.reponses[i]+"'>"+obj.reponses[i]+"</option>";
-        }
-        selectReponse += "</select>";
+            $(".modal-title").html("Choisissez");
+            $(".modal-body").html(obj.msg + " : " + selectReponse);
+            $("#buttonModal").attr("onclick", "choiceModal()");
 
-        $(".modal-title").html("Choisissez");
-        $(".modal-body").html(obj.msg+" : "+selectReponse);
-        $("#buttonModal").attr("onclick","choiceModal()");
+            $(".modal").modal("toggle");
+        });
 
-        $(".modal").modal("toggle");
-    });
+        socket.on("proposeSurrend", function () {
+            $(".modal-title").html("Choisissez");
+            $(".modal-body").html("Votre adversaire souhaitte abandonner : " +
+                "<select id='rep'>" +
+                "<option value='accept'>Accepter</option>" +
+                "<option value='decline'>Refuser</option>" +
+                "</select>");
+            $("#buttonModal").attr("onclick", "choiceSurrend()");
 
-    socket.on("proposeSurrend", function() {
-        $(".modal-title").html("Choisissez");
-        $(".modal-body").html("Votre adversaire souhaitte abandonner : "+
-                              "<select id='rep'>"+
-                                "<option value='accept'>Accepter</option>"+
-                                "<option value='decline'>Refuser</option>"+
-                              "</select>");
-        $("#buttonModal").attr("onclick","choiceSurrend()");
+            $(".modal").modal("toggle");
+        });
 
-        $(".modal").modal("toggle");
-    });
+        socket.on("disconnect", function () {
+            console.log("You are disconnected");
+            setTimeout(() => {
+                console.log("Try re-connexion");
+                socket = io({transports: ['websocket'], upgrade: false});
+                socket.emit("reconnexion", pseudo);
+                listenOnSocket(socket);
+            }, 10000)
+        });
+    }
 
     function choiceSurrend() {
         let reponse = document.getElementById("rep").value;

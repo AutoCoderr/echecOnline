@@ -110,7 +110,7 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('sendDemmand', function(pseudo) {
         if (typeof(socket.datas) == "undefined") {
-            socket.emit("msg", {msg: "Le serveur à été relancé, veuillez actualiser", type: "error"});
+            socket.emit("msg", {msg: "Le serveur a été relancé, veuillez actualiser", type: "error"});
             return;
         }
 
@@ -126,7 +126,7 @@ io.sockets.on('connection', function (socket) {
 
     socket.on("acceptDemmand", function(pseudo) {
         if (typeof(socket.datas) == "undefined") {
-            socket.emit("msg", {msg: "Le serveur à été relancé, veuillez actualiser", type: "error"});
+            socket.emit("msg", {msg: "Le serveur a été relancé, veuillez actualiser", type: "error"});
             return;
         }
 
@@ -141,8 +141,10 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on("playAgainstIA", function () {
+        console.log("playAgainstIA =>");
+        console.log(socket);
         if (typeof(socket.datas) == "undefined") {
-            socket.emit("msg", {msg: "Le serveur à été relancé, veuillez actualiser", type: "error"});
+            socket.emit("msg", {msg: "Le serveur a été relancé, veuillez actualiser", type: "error"});
             return;
         }
         let n = 1;
@@ -252,32 +254,51 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('disconnect', function() { // ----------------------> DECONNEXION D'UN CLIENT <---------------------------------------
         if (typeof(socket.datas) != "undefined") {
-            if (socket.datas.adversaire != null) {
-                if (!socket.datas.adversaire.isIA) {
-                    socket.datas.adversaire.adversaire = null;
-                    socket.datas.adversaire.voteToRestart = null;
-                    socket.datas.adversaire.playing = false;
-                    socket.datas.adversaire.socket.emit("quitParty");
-                    socket.datas.adversaire.playerType = null;
-                    socket.datas.adversaire.level = null;
-                } else
-                    delete players[socket.datas.adversaire.pseudo];
-            }
 
-            const pseudo = socket.datas.pseudo;
-            if (typeof(playerSearching[pseudo]) != "undefined") {
-                delete playerSearching[pseudo];
-            }
-            console.log("disconnect "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
-            delete players[pseudo];
-            let playersList = [];
-            for (let pseudo in players) {
-                if (!players[pseudo].playing) {
-                    playersList.push(pseudo);
+            socket.datas.disconnected = true;
+
+            socket.datas.timeoutBeforeDeletingUser = setTimeout(() => {
+                socket.datas.disconnected = false;
+                const pseudo = socket.datas.pseudo;
+                delete players[pseudo];
+                if (socket.datas.adversaire != null) {
+                    if (!socket.datas.adversaire.isIA) {
+                        socket.datas.adversaire.adversaire = null;
+                        socket.datas.adversaire.voteToRestart = null;
+                        socket.datas.adversaire.playing = false;
+                        socket.datas.adversaire.socket.emit("quitParty");
+                        socket.datas.adversaire.playerType = null;
+                        socket.datas.adversaire.level = null;
+                    } else
+                        delete players[socket.datas.adversaire.pseudo];
                 }
-            }
-            socket.broadcast.emit("displayPlayers", playersList);
+
+                if (typeof(playerSearching[pseudo]) != "undefined") {
+                    delete playerSearching[pseudo];
+                }
+                console.log("disconnect "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
+                let playersList = [];
+                for (let pseudo in players) {
+                    if (!players[pseudo].playing) {
+                        playersList.push(pseudo);
+                    }
+                }
+                socket.broadcast.emit("displayPlayers", playersList);
+            }, 30000);
         }
+    });
+
+    socket.on("reconnexion", function (pseudo) {
+        if (typeof(players[pseudo]) == "undefined") return;
+        if (!players[pseudo].disconnected) return;
+        console.log("Reconnexion "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
+        const player = players[pseudo];
+        clearInterval(player.timeoutBeforeDeletingUser);
+        player.socket = socket;
+        socket.datas = player;
+        console.log("reconnected => ");
+        console.log(socket);
+        player.disconnected = false;
     });
 
     socket.on("reponseCoupSpecial", function (rep) {

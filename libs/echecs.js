@@ -725,7 +725,8 @@ function startGame(J1,J2) {
 
 	J1.lastDeplacment = {};
 	J2.lastDeplacment = J1.lastDeplacment;
-
+	console.log("Try to display level to the user =>");
+	console.log(J1);
 	J1.socket.emit("displayLevel", {tab: tab, playerType: 1, hisOwnTurn: J1.hisOwnTurn});
 	if (!J2.isIA) {
 		J2.socket.emit("displayLevel", {tab: tab, playerType: 2, hisOwnTurn: J2.hisOwnTurn});
