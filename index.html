@@ -59,6 +59,7 @@
     let searchingForPlayer = false;
 
     let pseudo = "";
+    let token;
 
     const numToLetter = {0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F", 6: "G", 7: "H"};
 
@@ -117,11 +118,14 @@
     function listenOnSocket(socket) {
 
         socket.on("emptyChoicedCases", function () {
-            choicedCases = [];
+            if (choicedCases.length === 2) {
+                choicedCases = [];
+            }
         })
 
-        socket.on("newPseudo", function (newPseudo) {
-            pseudo = newPseudo;
+        socket.on("connected", function (datas) {
+            pseudo = datas.pseudo;
+            token = datas.token;
         });
 
         socket.on("demmand", function (pseudo) {
@@ -283,19 +287,7 @@
             document.getElementById("voteToRestart").innerHTML = nb;
         });
 
-        socket.on("msg", function (msg) {
-            let color;
-            if (msg.type == "error") {
-                color = "red";
-            } else if (msg.type == "info") {
-                color = "#008DC0";
-            }
-            if (msg.type != "empty") {
-                document.getElementById("msg").innerHTML = "<font color='" + color + "'>" + msg.msg + "</font>";
-            } else {
-                document.getElementById("msg").innerHTML = "";
-            }
-        });
+        socket.on("msg", displayMsg);
 
         socket.on("quitParty", function () {
             playing = false;
@@ -345,14 +337,37 @@
         });
 
         socket.on("disconnect", function () {
-            console.log("You are disconnected");
+            if (pseudo === "") return;
+            displayMsg({type: "warning", msg: "Votre connexion s'est coupée inopinément"})
+            console.log("You have been disconnected");
             setTimeout(() => {
-                console.log("Try re-connexion");
-                socket = io({transports: ['websocket'], upgrade: false});
-                socket.emit("reconnexion", pseudo);
+                console.log("Try to re-connect");
+                socket.emit("reconnection", {pseudo, token});
                 listenOnSocket(socket);
-            }, 10000)
+            }, 5000)
         });
+    }
+
+    function displayMsg(msg) {
+        let color;
+        switch (msg.type) {
+            case "error":
+                color = "red";
+                break;
+            case "warning":
+                color = "orange";
+                break;
+            case "info":
+                color = "#008DC8";
+                break;
+            default:
+                color = "white";
+        }
+        if (msg.type != "empty") {
+            document.getElementById("msg").innerHTML = "<font color='" + color + "'>" + msg.msg + "</font>";
+        } else {
+            document.getElementById("msg").innerHTML = "";
+        }
     }
 
     function choiceSurrend() {
@@ -375,7 +390,7 @@
 
     function demandSurrend() {
         if (confirm("Êtes vous sûre de vouloir abandonner?")) {
-            document.getElementById("msg").innerHTML = "<font color='#008DC0'>Demande d'abandon envoyé!</font>";
+            document.getElementById("msg").innerHTML = "<font color='#008DC0'>Demande d'abandon envoyée!</font>";
             socket.emit("demandSurrend");
         }
     }

@@ -82,6 +82,11 @@ io.sockets.on('connection', function (socket) {
         }
         let n = "";
         while(typeof(players[pseudo+n]) != "undefined") {
+            if (players[pseudo+n].disconnected && players[pseudo+n].ip === remplace(socket.handshake.address,"::ffff:","")) {
+                clearTimeout(players[pseudo+n].timeoutBeforeDeletingUser);
+                destroySession(players[pseudo+n]);
+                break;
+            }
             if (n == "") {
                 n = 2;
             } else {
@@ -89,22 +94,19 @@ io.sockets.on('connection', function (socket) {
             }
         }
         pseudo = pseudo+n;
-        players[pseudo] = {pseudo: pseudo, level: null, adversaire: null, playerType: null,
-            socket: socket, demmanded: "", playing: false, hisOwnTurn: null,
+        let token = rand(10**14,10**15-1);
+        while (playerHaveToken(token)) {
+            token = rand(10**14,10**15-1);
+        }
+        players[pseudo] = {pseudo, token, level: null, adversaire: null, playerType: null, ip: remplace(socket.handshake.address,"::ffff:",""),
+            socket, demmanded: "", playing: false, hisOwnTurn: null,
             voteToRestart: null, infosCase: null, scorePlayers: null, functionCoupSpecial: null, lastDeplacment: null, surrendDemmanded: false, isIA: false, simule: false};
         socket.datas = players[pseudo];
-        console.log("new connected! : "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
-        socket.emit("newPseudo", pseudo)
+        console.log("new connected! : "+pseudo+" ("+players[pseudo].ip+")");
+        socket.emit("connected", {pseudo, token})
 
         setTimeout(() => {
-            let playersList = [];
-            for (let unPseudo in players) {
-                if (!players[unPseudo].playing) {
-                    playersList.push(unPseudo);
-                }
-            }
-            socket.emit("displayPlayers", playersList);
-            socket.broadcast.emit("displayPlayers", playersList);
+            displayPlayers(socket.broadcast,socket);
         },20);
     });
 
@@ -141,8 +143,6 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on("playAgainstIA", function () {
-        console.log("playAgainstIA =>");
-        console.log(socket);
         if (typeof(socket.datas) == "undefined") {
             socket.emit("msg", {msg: "Le serveur a été relancé, veuillez actualiser", type: "error"});
             return;
@@ -197,6 +197,11 @@ io.sockets.on('connection', function (socket) {
             return;
         }
         if (!socket.datas.hisOwnTurn) {
+            return;
+        }
+        if (socket.datas.adversaire.disconnected) {
+            socket.emit("msg", {type: "warning", msg: "Attendez plutôt que votre adversaire se reconnecte"});
+            socket.emit("emptyChoicedCases");
             return;
         }
         if (typeof(cases.A) == "undefined" | typeof(cases.B) == "undefined") {
@@ -257,48 +262,50 @@ io.sockets.on('connection', function (socket) {
 
             socket.datas.disconnected = true;
 
-            socket.datas.timeoutBeforeDeletingUser = setTimeout(() => {
-                socket.datas.disconnected = false;
-                const pseudo = socket.datas.pseudo;
-                delete players[pseudo];
-                if (socket.datas.adversaire != null) {
-                    if (!socket.datas.adversaire.isIA) {
-                        socket.datas.adversaire.adversaire = null;
-                        socket.datas.adversaire.voteToRestart = null;
-                        socket.datas.adversaire.playing = false;
-                        socket.datas.adversaire.socket.emit("quitParty");
-                        socket.datas.adversaire.playerType = null;
-                        socket.datas.adversaire.level = null;
-                    } else
-                        delete players[socket.datas.adversaire.pseudo];
-                }
+            const player = socket.datas;
 
-                if (typeof(playerSearching[pseudo]) != "undefined") {
-                    delete playerSearching[pseudo];
-                }
-                console.log("disconnect "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
-                let playersList = [];
-                for (let pseudo in players) {
-                    if (!players[pseudo].playing) {
-                        playersList.push(pseudo);
-                    }
-                }
-                socket.broadcast.emit("displayPlayers", playersList);
+            console.log("'"+player.pseudo+"' lost connection ("+player.ip+")");
+            console.log("'"+player.pseudo+"' will be disconnected in 30 seconds if he not reconnect")
+
+            if (player.playing && !player.adversaire.isIA) {
+                player.adversaire.socket.emit("msg", {type: "warning", msg: "Votre adversaire a momentanément perdu sa connexion,<br>"+
+                                                                                            "vous pouvez attendre qu'il se reconnecte"});
+            }
+
+            displayPlayers(socket.broadcast);
+
+            player.timeoutBeforeDeletingUser = setTimeout(() => {
+                destroySession(player);
             }, 30000);
         }
     });
 
-    socket.on("reconnexion", function (pseudo) {
+    socket.on("reconnection", function (datas) {
+        const pseudo = datas.pseudo,
+            token = datas.token;
         if (typeof(players[pseudo]) == "undefined") return;
         if (!players[pseudo].disconnected) return;
-        console.log("Reconnexion "+pseudo+" ("+remplace(socket.handshake.address,"::ffff:","")+")");
+        if (players[pseudo].token !== token) return;
+
         const player = players[pseudo];
-        clearInterval(player.timeoutBeforeDeletingUser);
+        console.log("Reconnection "+pseudo+" ("+player.ip+")");
+        clearTimeout(player.timeoutBeforeDeletingUser);
         player.socket = socket;
         socket.datas = player;
-        console.log("reconnected => ");
-        console.log(socket);
         player.disconnected = false;
+        socket.emit("emptyChoicedCases");
+        socket.emit("msg", {type: "warning", msg: "Votre connexion a été rétablit!"})
+        setTimeout(() => {
+            socket.emit("msg", {type: "empty"});
+        }, 2000);
+
+        displayPlayers(socket.broadcast);
+        if (player.playing && !player.adversaire.isIA) {
+            player.adversaire.socket.emit("msg", {type: "warning", msg: "Votre adversaire est de nouveau connecté"});
+            setTimeout(() => {
+                player.adversaire.socket.emit("msg", {type: "empty"});
+            }, 2000);
+        }
     });
 
     socket.on("reponseCoupSpecial", function (rep) {
@@ -351,5 +358,49 @@ io.sockets.on('connection', function (socket) {
         }
     });
 });
+
+function destroySession(player) {
+    player.disconnected = false;
+    delete players[player.pseudo];
+    if (player.adversaire != null) {
+        if (!player.adversaire.isIA) {
+            player.adversaire.adversaire = null;
+            player.adversaire.voteToRestart = null;
+            player.adversaire.playing = false;
+            player.adversaire.socket.emit("quitParty");
+            player.adversaire.playerType = null;
+            player.adversaire.level = null;
+        } else
+            delete players[player.adversaire.pseudo];
+    }
+
+    if (typeof(playerSearching[player.pseudo]) != "undefined") {
+        delete playerSearching[player.pseudo];
+    }
+    console.log("disconnect "+player.pseudo+" ("+player.ip+")");
+}
+
+function displayPlayers(...sockets) {
+    let playersList = [];
+    for (let pseudo in players) {
+        if (!players[pseudo].playing && !players[pseudo].disconnected) {
+            playersList.push(pseudo);
+        }
+    }
+    for (let socket of sockets) {
+        socket.emit("displayPlayers", playersList);
+    }
+}
+
+function playerHaveToken(token) {
+    for (let pseudo in players) {
+        if (players[pseudo].token === token) return true;
+    }
+    return false;
+}
+
+function rand(a,b) {
+    return a+Math.floor(Math.random()*(b-a+1));
+}
 
 server.listen(3003);
