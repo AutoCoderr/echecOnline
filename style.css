@@ -123,9 +123,9 @@ legende :
     width: 30px;
 }
 
-.entoured {
+.framed {
     border: 2px solid black;
-    border-color: red;
+    border-color: blue;
 }
 
 body {

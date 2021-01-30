@@ -1,7 +1,7 @@
 let http = require('http'),
     url = require('url'),
     fs = require('fs');
-const {playerSearching, players, startGame, remplace, action, callbackAction, caseNameToCoor, gameOver, startIa} = require("./libs/echecs");
+const {playerSearching, players, startGame, remplace, action, callbackAction, caseNameToCoor, gameOver, startIa, isEchec} = require("./libs/echecs");
 
 /*
 legende :
@@ -317,6 +317,29 @@ io.sockets.on('connection', function (socket) {
         }
         const player = socket.datas;
         player.functionCoupSpecial(socket.datas,rep);
+
+        player.hisOwnTurn = false;
+        player.adversaire.hisOwnTurn = true;
+        if (!player.isIA) {
+            player.socket.emit("displayLevel", {
+                tab: player.level,
+                playerType: player.playerType,
+                hisOwnTurn: player.hisOwnTurn,
+                echec: isEchec(player.playerType, player.level),
+                lastDeplacment: player.lastDeplacment
+            });
+        }
+        if (!player.adversaire.isIA) {
+            player.adversaire.socket.emit("displayLevel", {
+                tab: player.level,
+                playerType: player.adversaire.playerType,
+                hisOwnTurn: player.adversaire.hisOwnTurn,
+                echec: isEchec(player.adversaire.playerType, player.level),
+                lastDeplacment: player.lastDeplacment
+            });
+        }
+        player.functionCoupSpecial = null;
+
         if (player.adversaire.isIA) {
             startIa(player.adversaire);
         }

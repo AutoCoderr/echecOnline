@@ -200,7 +200,7 @@ async function action(A,B,player,) {
 							promotion(lB,cB,player,rep);
 						},
 						msg: "Par quoi voulez vous remplacer ce pion?",
-						reponses: ["Cavalier","Tour","Fou","Reine"],
+						reponses: ["Reine","Tour","Cavalier","Fou"],
 						name: "promotion"
 					}
 				};
@@ -373,7 +373,7 @@ async function action(A,B,player,) {
 						player,
 						coupSpecial: {
 							func: (player,rep) => {
-								roque(lB,cB,lB,cT,player,rep);
+								roque(lA,cA,lB,cB,lB,cT,player,rep);
 							},
 							msg: "Effectuer un roque?",
 							reponses: ["oui","non"],
@@ -868,69 +868,34 @@ function promotion(l,c,player,rep) {
 		echec[l][c] = 50+currentPlayer;
 		scorePlayers[currentPlayer][1] -= 1;
 	}
-	if (!player.simule) {
-		player.hisOwnTurn = false;
-		player.adversaire.hisOwnTurn = true;
-		if (!player.isIA) {
-			player.socket.emit("displayLevel", {
-				tab: player.level,
-				playerType: player.playerType,
-				hisOwnTurn: player.hisOwnTurn,
-				echec: isEchec(player.playerType, echec),
-				lastDeplacment: player.lastDeplacment
-			});
-		}
-		if (!player.adversaire.isIA) {
-			player.adversaire.socket.emit("displayLevel", {
-				tab: player.level,
-				playerType: player.adversaire.playerType,
-				hisOwnTurn: player.adversaire.hisOwnTurn,
-				echec: isEchec(player.adversaire.playerType, echec),
-				lastDeplacment: player.lastDeplacment
-			});
-		}
-		player.functionCoupSpecial = null;
-	}
 }
 
-function roque(lR,cR,lT,cT,player,rep) {
+function roque(lRA,cRA,lRB,cRB,lT,cT,player,rep) {
 	let echec = player.level;
+	let infosCase = player.infosCase;
+	let kingInfoCase = getInfoCase(lRB,cRB,infosCase);
 	if (rep == "oui") {
-		let infosCase = player.infosCase;
 		let towerInfoCase = getInfoCase(lT,cT,infosCase);
-		if (cT == cR+1) {
-			towerInfoCase.c = cR-1;
+		if (cT == cRB+1) {
+			towerInfoCase.c = cRA+1;
+			kingInfoCase.c = cRA+2
 			echec[lT][cT] = 0;
-			echec[lR][cR-1] = 30+player.playerType;
-		} else if (cT == cR-1) {
-			towerInfoCase.c = cR+1;
+			echec[lRA][cRA+1] = 30+player.playerType;
+			echec[lRA][cRA+2] = echec[lRB][cRB];
+		} else if (cT == cRB-1) {
+			towerInfoCase.c = cRA-1;
+			kingInfoCase.c = cRA-2;
 			echec[lT][cT] = 0;
-			echec[lR][cR+1] = 30+player.playerType;
+			echec[lRA][cRA-1] = 30+player.playerType;
+			echec[lRA][cRA-2] = echec[lRB][cRB];
+			echec[lRB][cRB] = 0;
 		}
 		towerInfoCase.nb += 1;
-	}
-	if (!player.simule) {
-		player.hisOwnTurn = false;
-		player.adversaire.hisOwnTurn = true;
-		if (!player.isIA) {
-			player.socket.emit("displayLevel", {
-				tab: player.level,
-				playerType: player.playerType,
-				hisOwnTurn: player.hisOwnTurn,
-				echec: isEchec(player.playerType, echec),
-				lastDeplacment: player.lastDeplacment
-			});
-		}
-		if (!player.adversaire.isIA) {
-			player.adversaire.socket.emit("displayLevel", {
-				tab: player.level,
-				playerType: player.adversaire.playerType,
-				hisOwnTurn: player.adversaire.hisOwnTurn,
-				echec: isEchec(player.adversaire.playerType, echec),
-				lastDeplacment: player.lastDeplacment
-			});
-		}
-		player.functionCoupSpecial = null;
+	} else if (rep == "non") {
+		kingInfoCase.l = lRA;
+		kingInfoCase.c = cRA;
+		echec[lRA][cRA] = echec[lRB][cRB];
+		echec[lRB][cRB] = 0;
 	}
 }
 
@@ -1284,6 +1249,7 @@ module.exports = {
 	echecEtMat,
 	getInfoCase,
 	caseNameToCoor,
+	isEchec,
 	gameOver,
 	startIa
 }
