@@ -892,9 +892,13 @@ function roque(lRA,cRA,lRB,cRB,lT,cT,player,rep) {
 		}
 		towerInfoCase.nb += 1;
 	} else if (rep == "non") {
-		kingInfoCase.l = lRA;
-		kingInfoCase.c = cRA;
-		echec[lRA][cRA] = echec[lRB][cRB];
+		if (cT == cRB+1) {
+			kingInfoCase.c = cRA+1;
+			echec[lRA][cRA+1] = echec[lRB][cRB];
+		} else if (cT == cRB-1) {
+			kingInfoCase.c = cRA-1;
+			echec[lRA][cRA-1] = echec[lRB][cRB];
+		}
 		echec[lRB][cRB] = 0;
 	}
 }
